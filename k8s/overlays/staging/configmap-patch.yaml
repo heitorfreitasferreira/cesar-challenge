@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todolist-config
+data:
+  APP_COLOR: "green"
+  APP_NAME: "TodoList [staging]"

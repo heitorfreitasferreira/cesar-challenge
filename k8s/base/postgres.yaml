@@ -2,31 +2,20 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-data
-  namespace: todolist
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
     requests:
       storage: 1Gi
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: postgres-credentials
-  namespace: todolist
-type: Opaque
-stringData:
-  # FORA DO PADRAO PROD: valores sinteticos para o desafio. Em producao isto
-  # viria de Sealed Secrets / External Secrets, nunca em texto claro no Git.
-  POSTGRES_USER: todolist
-  POSTGRES_PASSWORD: CHANGEME-trocar-no-deploy-local
-  POSTGRES_DB: todolist
----
+# ATENCAO: o Secret postgres-credentials NAO vive aqui.
+# Ele e entregue por SealedSecret em cada overlay
+# (k8s/overlays/<env>/sealed-postgres.yaml) e descriptografado
+# pelo controller so dentro do cluster. Nada em texto claro no Git.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: todolist
 spec:
   replicas: 1
   strategy:
@@ -41,7 +30,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:16-alpine
+          image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
           ports:
             - containerPort: 5432
           env:
@@ -73,7 +62,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres
-  namespace: todolist
 spec:
   selector:
     app: postgres

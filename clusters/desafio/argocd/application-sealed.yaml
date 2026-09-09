@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sealed-secrets
+  namespace: argocd
+  annotations:
+    # Infra antes da app: o CRD SealedSecret precisa existir antes dos
+    # overlays sincronizarem. Na criacao do zero, aplicar este App primeiro
+    # e aguardar Healthy antes de staging/production (ver README).
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: todolist
+  source:
+    repoURL: https://github.com/heitorfreitasferreira/cesar-challenge.git
+    targetRevision: main
+    path: clusters/desafio/sealed-secrets
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

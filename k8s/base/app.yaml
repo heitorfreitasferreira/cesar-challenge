@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: todolist
-  namespace: todolist
 spec:
   replicas: 2
   strategy:
@@ -27,15 +26,24 @@ spec:
             - containerPort: 5000
           env:
             - name: DB_HOST
-              value: postgres
+              value: postgres # DNS do Service no proprio namespace
             - name: DB_PORT
               value: "5432"
+            # DB_NAME nao aceita arquivo (app.py le de env): vem do Secret via env.
             - name: DB_NAME
               valueFrom: { secretKeyRef: { name: postgres-credentials, key: POSTGRES_DB } }
-            - name: DB_USER
-              valueFrom: { secretKeyRef: { name: postgres-credentials, key: POSTGRES_USER } }
-            - name: DB_PASSWORD
-              valueFrom: { secretKeyRef: { name: postgres-credentials, key: POSTGRES_PASSWORD } }
+          # APP_COLOR/APP_NAME (nao segredos) via ConfigMap do overlay.
+          envFrom:
+            - configMapRef:
+                name: todolist-config
+          # Credenciais via arquivos (app.py:_config prefere arquivo a env).
+          # Volume projected: 2 Secrets no MESMO diretorio (2 volumeMounts no
+          # mesmo path esconderiam um ao outro). items: renomeia
+          # POSTGRES_* -> DB_* porque o arquivo precisa ter o nome da var.
+          volumeMounts:
+            - name: creds
+              mountPath: /var/run/secrets/todolist
+              readOnly: true
           livenessProbe:
             httpGet: { path: /healthz, port: 5000 }
             initialDelaySeconds: 15
@@ -47,12 +55,33 @@ spec:
           resources:
             requests: { cpu: 100m, memory: 128Mi }
             limits: { cpu: 500m, memory: 512Mi }
+      volumes:
+        - name: creds
+          projected:
+            sources:
+              - secret:
+                  name: postgres-credentials
+                  items:
+                    - key: POSTGRES_USER
+                      path: DB_USER
+                    - key: POSTGRES_PASSWORD
+                      path: DB_PASSWORD
+              - secret:
+                  name: todolist-auth
+                  items:
+                    - key: ADMIN_USER
+                      path: ADMIN_USER
+                    - key: ADMIN_PASSWORD
+                      path: ADMIN_PASSWORD
+                    - key: SESSION_KEY
+                      path: SESSION_KEY
+                    - key: CLEANUP_TOKEN
+                      path: CLEANUP_TOKEN
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: todolist
-  namespace: todolist
 spec:
   selector:
     app: todolist
@@ -64,7 +93,6 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: todolist
-  namespace: todolist
 spec:
   minAvailable: 1
   selector:
@@ -75,7 +103,6 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: todolist
-  namespace: todolist
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

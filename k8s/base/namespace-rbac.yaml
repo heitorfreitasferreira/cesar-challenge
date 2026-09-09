@@ -1,34 +1,35 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: todolist
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: todolist
-  namespace: todolist
 ---
 # /pods e o status de cleanup leem a API do Kubernetes via ServiceAccount.
-# Leitura restrita a pods e cronjobs do proprio namespace (sem ClusterRole).
+# Leitura minima no proprio namespace. O RoleBinding e completado pelo
+# kustomize (namespace do overlay); nao fixar namespace aqui.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: todolist-reader
-  namespace: todolist
 rules:
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list"]
+  # /cleanup/status le os logs dos pods do Job de limpeza.
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+  # /cleanup/status suspende/retoma o CronJob (patch de spec.suspend).
+  # resourceNames trava no CronJob da app: sem ele, patch em cronjobs
+  # permitiria reescrever jobTemplate (RCE via imagem arbitraria).
   - apiGroups: ["batch"]
     resources: ["cronjobs"]
-    verbs: ["get", "list"]
+    resourceNames: ["todolist-cleanup"]
+    verbs: ["get", "list", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: todolist-reader
-  namespace: todolist
 subjects:
   - kind: ServiceAccount
     name: todolist

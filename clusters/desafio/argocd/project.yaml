@@ -4,15 +4,54 @@ metadata:
   name: todolist
   namespace: argocd
 spec:
-  description: Desafio platform — todolist
+  description: Desafio platform — todolist (staging + production)
   sourceRepos:
     - https://github.com/heitorfreitasferreira/cesar-challenge.git
   destinations:
     - server: https://kubernetes.default.svc
-      namespace: todolist
+      namespace: todolist-staging
+    - server: https://kubernetes.default.svc
+      namespace: todolist-production
+    # kube-system recebe o controller do Sealed Secrets (ClusterRole e do
+    # proprio controller vendorizado, nao da app).
+    - server: https://kubernetes.default.svc
+      namespace: kube-system
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+  # RBAC/Secret/SealedSecret ficam no GitOps de proposito (allowlist
+  # explicita em vez de */*): sem eles o sync nega os proprios manifests.
+  # ClusterRole/Binding da APP sao proibidos (so os do controller).
   namespaceResourceWhitelist:
-    - group: "*"
-      kind: "*"
+    - group: ""
+      kind: ServiceAccount
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Secret
+    - group: ""
+      kind: PersistentVolumeClaim
+    - group: apps
+      kind: Deployment
+    - group: batch
+      kind: CronJob
+    - group: networking.k8s.io
+      kind: Ingress
+    - group: policy
+      kind: PodDisruptionBudget
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+    - group: rbac.authorization.k8s.io
+      kind: Role
+    - group: rbac.authorization.k8s.io
+      kind: RoleBinding
+    - group: bitnami.com
+      kind: SealedSecret

@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: todolist-production
+  namespace: argocd
+spec:
+  project: todolist
+  source:
+    repoURL: https://github.com/heitorfreitasferreira/cesar-challenge.git
+    targetRevision: main
+    path: k8s/overlays/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: todolist-production
+  syncPolicy:
+    # Producao com sync MANUAL de proposito: staging valida sozinho, alguem
+    # promove clicando Sync no Argo (demo de 2 min + zero blast radius de
+    # um commit ruim quebrar os dois envs ao mesmo tempo).
+    syncOptions:
+      - CreateNamespace=true
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+      managedFieldsManagers:
+        - sealed-secrets-controller

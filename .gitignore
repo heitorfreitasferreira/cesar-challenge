@@ -4,4 +4,8 @@
 *.kubeconfig
 kubeconfig*.yaml
 .env
+.env.*
+!envs/*.env.example
+envs/*.env
+sealed-backup/
 .opencode/
