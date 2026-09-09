@@ -17,6 +17,6 @@ patches:
     kind: Ingress
     name: todolist
 images:
-- digest: sha256:76cabe49a1dd8052209b627e6116463a40e05d7b3dad738665d2f7e6ddb0e9b3
+- digest: sha256:01c705101071e4be5e8c4f3af0165f5771d12eec6752667bb256ec0548bbac41
   name: ghcr.io/heitorfreitasferreira/todolist-app
   newName: ghcr.io/heitorfreitasferreira/todolist-app
