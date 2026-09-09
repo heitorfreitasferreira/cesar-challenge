@@ -1,0 +1,7 @@
+.kube/
+.config/
+*.key
+*.kubeconfig
+kubeconfig*.yaml
+.env
+.opencode/

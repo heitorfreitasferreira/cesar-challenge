@@ -1,0 +1,21 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: desafio
+servers: 1
+agents: 1
+kubeAPI:
+  hostIP: "127.0.0.1"
+  hostPort: "6444"
+ports:
+  - port: 8081:80
+    nodeFilters:
+      - loadbalancer
+    hostIP: 127.0.0.1
+  - port: 8444:443
+    nodeFilters:
+      - loadbalancer
+    hostIP: 127.0.0.1
+options:
+  k3d:
+    disableLoadbalancer: false
