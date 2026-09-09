@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todolist
+  namespace: todolist
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0 # R4: sempre 2 pods servindo durante rollout
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: todolist
+  template:
+    metadata:
+      labels:
+        app: todolist
+    spec:
+      serviceAccountName: todolist
+      containers:
+        - name: todolist
+          # Imagem fixada por digest imutavel no overlay (nunca :latest).
+          image: ghcr.io/heitorfreitasferreira/todolist-app:PLACEHOLDER-DIGEST
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              valueFrom: { secretKeyRef: { name: postgres-credentials, key: POSTGRES_DB } }
+            - name: DB_USER
+              valueFrom: { secretKeyRef: { name: postgres-credentials, key: POSTGRES_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: postgres-credentials, key: POSTGRES_PASSWORD } }
+          livenessProbe:
+            httpGet: { path: /healthz, port: 5000 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet: { path: /healthz, port: 5000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todolist
+  namespace: todolist
+spec:
+  selector:
+    app: todolist
+  ports:
+    - port: 80
+      targetPort: 5000
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: todolist
+  namespace: todolist
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: todolist
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: todolist
+  namespace: todolist
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: todolist
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

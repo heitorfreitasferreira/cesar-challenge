@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: todolist
+  namespace: argocd
+spec:
+  project: todolist
+  source:
+    repoURL: https://github.com/heitorfreitasferreira/cesar-challenge.git
+    targetRevision: main
+    path: k8s/overlays/desafio
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: todolist
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

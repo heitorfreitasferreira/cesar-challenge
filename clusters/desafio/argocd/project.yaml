@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: todolist
+  namespace: argocd
+spec:
+  description: Desafio platform — todolist
+  sourceRepos:
+    - https://github.com/heitorfreitasferreira/cesar-challenge.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: todolist
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
