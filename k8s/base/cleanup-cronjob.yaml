@@ -20,10 +20,7 @@ spec:
               env:
                 - name: CLEANUP_TOKEN
                   valueFrom: { secretKeyRef: { name: todolist-auth, key: CLEANUP_TOKEN } }
-              command:
-                - sh
-                - -c
-                - curl -s -X POST -H "X-Cleanup-Token: $CLEANUP_TOKEN" http://todolist/cleanup
+              command: ["sh", "-c", "curl -s -X POST -H \"X-Cleanup-Token: $CLEANUP_TOKEN\" http://todolist/cleanup"]
               resources:
                 requests: { cpu: 10m, memory: 16Mi }
                 limits: { cpu: 50m, memory: 64Mi }
