@@ -5,7 +5,7 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
 - 2026-09-09 · k3d para o cluster. Contexto: padrao do trabalho e k3s; desafio permite
   local. Escolha: k3d (k3s em Docker, descartavel em 1 comando). Descarte: kind (nao e k3s),
   minikube (sujaria ~/.minikube), cloud (custo + conta pessoal).
-- 2026-09-09 · 2 repos (opcao A). Contexto: espelhar infra-k3s (CI na app, CD no GitOps).
+- 2026-09-09 · 2 repos (opcao A). Contexto: separar CI (app) de CD (GitOps).
   Escolha: fork `todolist-app` (codigo + workflow) + `cesar-challenge` (manifests + Argo CD).
   Descarte: monorepo (misturaria CI com fonte de deploy).
 - 2026-09-09 · Manifests em fonte unica. Contexto: council J2 apontou risco de drift.

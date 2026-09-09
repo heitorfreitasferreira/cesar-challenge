@@ -1,7 +1,7 @@
 # cesar-challenge — repo GitOps (ENTREGAVEL)
 
 Fonte de verdade do deploy da todolist-app no cluster `desafio` (k3d local).
-Padrao espelhado de `infra-k3s`: manifests finais aqui, CI no repo da app,
+Padrao GitOps: manifests finais aqui, CI no repo da app,
 Argo CD reconcilia Git -> cluster. Digest imutavel versionado aqui; o repo
 da app nao e segunda fonte de verdade.
 

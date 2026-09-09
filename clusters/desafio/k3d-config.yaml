@@ -8,14 +8,12 @@ kubeAPI:
   hostIP: "127.0.0.1"
   hostPort: "6444"
 ports:
-  - port: 8081:80
+  - port: 127.0.0.1:8081:80
     nodeFilters:
       - loadbalancer
-    hostIP: 127.0.0.1
-  - port: 8444:443
+  - port: 127.0.0.1:8444:443
     nodeFilters:
       - loadbalancer
-    hostIP: 127.0.0.1
 options:
   k3d:
     disableLoadbalancer: false
