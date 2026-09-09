@@ -16,3 +16,6 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
   `k8s/overlays/desafio`; imagem por digest imutavel (`@sha256:`), nunca `:latest`.
 - 2026-09-09 · `.opencode/` fora do entregavel. Contexto: IA encorajada mas avaliador
   grade README/DECISIONS/evidencias. Escolha: MCPs e comandos ficam no workspace local.
+- 2026-09-09 · Digest com prefixo `sha256:` (fix). Contexto: primeiro bump gerou
+  `InvalidImageName` (CI arrancava o prefixo). Escolha: kustomize exige
+  `digest: sha256:<hex>`; workflow corrigido e validado pelo proprio loop CI->ArgoCD.

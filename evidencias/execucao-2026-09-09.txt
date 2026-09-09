@@ -1,0 +1,44 @@
+=== argocd ===
+NAME       SYNC STATUS   HEALTH STATUS
+todolist   Synced        Healthy
+
+=== todolist ===
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/postgres   1/1     1            1           54m
+deployment.apps/todolist   2/2     2            2           54m
+
+NAME               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/postgres   ClusterIP   10.43.145.53    <none>        5432/TCP   54m
+service/todolist   ClusterIP   10.43.163.131   <none>        80/TCP     54m
+
+NAME                                 CLASS     HOSTS   ADDRESS                 PORTS   AGE
+ingress.networking.k8s.io/todolist   traefik   *       172.21.0.2,172.21.0.3   80      54m
+
+NAME                                           REFERENCE             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/todolist   Deployment/todolist   cpu: 2%/70%   2         5         2          54m
+
+NAME                                  MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+poddisruptionbudget.policy/todolist   1               N/A               1                     54m
+
+=== pods ===
+NAME                        READY   STATUS    RESTARTS   AGE    IP           NODE                   NOMINATED NODE   READINESS GATES
+postgres-f4db4ff75-dtxpc    1/1     Running   0          54m    10.42.0.8    k3d-desafio-server-0   <none>           <none>
+todolist-5f86d4d576-687sq   1/1     Running   0          30s    10.42.0.15   k3d-desafio-server-0   <none>           <none>
+todolist-5f86d4d576-m7774   1/1     Running   0          2m1s   10.42.1.12   k3d-desafio-agent-0    <none>           <none>
+
+=== r3 ===
+GET /healthz -> 200
+GET / -> 302
+
+=== r4 pod-delete ===
+99s         Normal    Created                        pod/todolist-5f86d4d576-8pcwr         Container created
+30s         Normal    SuccessfulCreate               replicaset/todolist-5f86d4d576        Created pod: todolist-5f86d4d576-687sq
+29s         Normal    Created                        pod/todolist-5f86d4d576-687sq         Container created
+
+=== db ===
+        List of relations
+ Schema | Name | Type  |  Owner   
+--------+------+-------+----------
+ public | todo | table | todolist
+(1 row)
+

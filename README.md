@@ -16,13 +16,21 @@ da app nao e segunda fonte de verdade.
 | `../todolist-app/.github/workflows/` | R2: CI (build -> GHCR -> bump de digest aqui) |
 | `evidencias/` | R5: logs, screenshots |
 
-## Reproducao
+## Reproducao (do zero)
 
 ```bash
 export KUBECONFIG=~/.kube/desafio-k3d.kubeconfig
 k3d cluster create --config clusters/desafio/k3d-config.yaml
-# + bootstrap argocd/ingress/postgres (ver clusters/desafio/argocd/)
+kubectl apply -f clusters/desafio/argocd/namespace.yaml
+kubectl apply -n argocd -f clusters/desafio/argocd/install.yaml
+kubectl -n argocd rollout status deployment/argocd-server
+kubectl apply -f clusters/desafio/argocd/project.yaml
+kubectl apply -f clusters/desafio/argocd/application.yaml
+# Argo CD sincroniza sozinho (automated + selfHeal): kubectl -n argocd get applications
 ```
+
+Novo deploy: `git push` no fork `todolist-app` dispara a CI
+(build -> GHCR -> bump de digest aqui -> Argo CD sync). Nada manual.
 
 App acessivel em `http://localhost:8081` (R3).
 Detalhes de operacao: `DECISIONS.md`.
