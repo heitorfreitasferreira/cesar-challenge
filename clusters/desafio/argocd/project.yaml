@@ -12,9 +12,6 @@ spec:
       namespace: todolist-staging
     - server: https://kubernetes.default.svc
       namespace: todolist-production
-    # TEMP migração: namespace legado, removido ao final (ver DECISIONS).
-    - server: https://kubernetes.default.svc
-      namespace: todolist
     # kube-system recebe o controller do Sealed Secrets (ClusterRole e do
     # proprio controller vendorizado, nao da app).
     - server: https://kubernetes.default.svc
