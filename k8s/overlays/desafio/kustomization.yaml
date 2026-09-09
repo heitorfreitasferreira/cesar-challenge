@@ -3,6 +3,6 @@ kind: Kustomization
 resources:
   - ../../base
 images:
-  # A CI do fork sobrescreve esta linha com o digest imutavel a cada push.
   - name: ghcr.io/heitorfreitasferreira/todolist-app
-    newTag: desafio-latest
+    newTag: 82b98bff2c79930e623bf7b69d4cac02b470e272
+    digest: af65aa175a616caa08ab287f6542cc8397bc3b1c7600ddcf9b346ce4e6b980b4
