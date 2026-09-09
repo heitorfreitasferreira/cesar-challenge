@@ -1,22 +1,22 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: todolist-staging
-  # SealedSecrets (gerados com kubeseal --scope strict, um por env):
 resources:
-- ../../base
-- namespace.yaml
-- sealed-postgres.yaml
-- sealed-auth.yaml
+  - ../../base
+  - namespace.yaml
+  # SealedSecrets (gerados com kubeseal --scope strict, um por env):
+  - sealed-postgres.yaml
+  - sealed-auth.yaml
 patches:
-- path: configmap-patch.yaml
-  target:
-    kind: ConfigMap
-    name: todolist-config
-- path: ingress-patch.yaml
-  target:
-    kind: Ingress
-    name: todolist
+  - path: configmap-patch.yaml
+    target:
+      kind: ConfigMap
+      name: todolist-config
+  - path: ingress-patch.yaml
+    target:
+      kind: Ingress
+      name: todolist
 images:
-- digest: sha256:01c705101071e4be5e8c4f3af0165f5771d12eec6752667bb256ec0548bbac41
-  name: ghcr.io/heitorfreitasferreira/todolist-app
-  newName: ghcr.io/heitorfreitasferreira/todolist-app
+  - name: ghcr.io/heitorfreitasferreira/todolist-app
+    newTag: e2cf2a1eca5bd03bf4c7ad621eb7c1d42ca381fc
+    digest: sha256:01c705101071e4be5e8c4f3af0165f5771d12eec6752667bb256ec0548bbac41
