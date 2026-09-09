@@ -16,6 +16,7 @@ spec:
     path: clusters/desafio/sealed-secrets
   destination:
     server: https://kubernetes.default.svc
+    namespace: kube-system
   syncPolicy:
     automated:
       prune: true
