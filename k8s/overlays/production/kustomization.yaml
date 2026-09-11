@@ -18,5 +18,5 @@ patches:
       name: todolist
 images:
   - name: ghcr.io/heitorfreitasferreira/todolist-app
-    newTag: 6c32f1c5111079c691497f540b7f795a0421d5c8
-    digest: sha256:fcff151f9dbcbdffdf34623d373b4d0f6d7335336423f23f5d24190c63602a11
+    newTag: 7bfafa351a859e21d50a5bae77d299e64ebbb1cf
+    digest: sha256:c345118781747b3011a79bc5fc9c3703469cd9331465856b25bb80201632289c
