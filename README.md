@@ -36,14 +36,19 @@ da app nao e segunda fonte de verdade.
 
 | Env | Namespace | Cor | URL | Sync Argo |
 |---|---|---|---|---|
-| staging | `todolist-staging` | green | http://staging.localhost | automatico |
-| production | `todolist-production` | blue | http://prod.localhost | manual (promocao) |
+| staging | `todolist-staging` | green | http://staging.localhost (https tb) | automatico |
+| production | `todolist-production` | blue | http://prod.localhost (https tb) | manual (promocao) |
 | Argo CD UI (bonus) | argocd | — | http://argocd.localhost | — |
 | Grafana | observability | — | http://grafana.localhost | — |
 
 Trocar a cor de um env = 1 linha no `configmap-patch.yaml` do overlay + push.
 Login app: `admin` + senha do SealedSecret (ver `/k-secrets` no opencode).
 Login Grafana: `admin` + senha em `envs/grafana-observability.env` (local, gitignored).
+
+Acesso **sem porta** (`http://<host>` e `https://<host>`): o LB publica 80 e 443.
+O TLS é terminado no Ingress com o certificado self-signed padrão do Traefik
+(browser avisa). Em produção o caminho é cert-manager + ACME/CA interna — ver
+`DECISIONS.md`.
 
 ## Observabilidade (bonus)
 

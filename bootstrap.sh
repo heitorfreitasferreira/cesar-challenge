@@ -179,6 +179,11 @@ apply_platform() {
     application-kube-prometheus-stack application-loki application-alloy application-observability ; do
     kubectl apply -f "${ROOT}/clusters/desafio/argocd/${app}.yaml"
   done
+  # Provisionamento INICIAL: sincroniza production uma vez para o ambiente
+  # ficar pronto. Promocoes seguintes continuam manuais (de proposito).
+  log "sincronizando production (provisionamento inicial)"
+  kubectl -n "${ARGOCD_NS}" patch application todolist-production --type merge \
+    -p '{"operation":{"initiatedBy":{"username":"bootstrap"},"sync":{"revision":"HEAD"}}}' >/dev/null
 }
 
 wait_ready() {
