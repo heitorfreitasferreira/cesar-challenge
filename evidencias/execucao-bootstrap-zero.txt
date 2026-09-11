@@ -1,0 +1,44 @@
+=== bootstrap do zero (2026-09-11 17:20:27 UTC) ===
+cluster recriado via ./bootstrap.sh (restore da chave)
+
+=== argocd apps ===
+NAME                    SYNC STATUS   HEALTH STATUS
+alloy                   Synced        Healthy
+kube-prometheus-stack   Synced        Healthy
+loki                    Synced        Healthy
+observability           Synced        Healthy
+sealed-secrets          Synced        Healthy
+todolist-production     Synced        Healthy
+todolist-staging        Synced        Healthy
+
+=== pods staging ===
+postgres-5b464dc44f-ccpp5         2/2   Running     0     20m
+todolist-767665749c-bw9fj         1/1   Running     0     8m13s
+todolist-767665749c-nmxx6         1/1   Running     0     7m51s
+todolist-cleanup-29819110-cf5dc   0/1   Completed   0     10m
+todolist-cleanup-29819115-l497q   0/1   Completed   0     5m27s
+todolist-cleanup-29819120-glx5r   0/1   Completed   0     27s
+
+=== pods production ===
+postgres-5b464dc44f-8x9n4         2/2   Running     0     14m
+todolist-5c68565854-dtg6z         1/1   Running     0     11m
+todolist-5c68565854-tvxqw         1/1   Running     0     11m
+todolist-cleanup-29819110-vz2ws   0/1   Completed   0     10m
+todolist-cleanup-29819115-vpwnh   0/1   Completed   0     5m27s
+todolist-cleanup-29819120-dg9d7   0/1   Completed   0     27s
+
+=== endpoints (*.localhost) ===
+200  staging.localhost:8081/healthz
+200  staging.localhost:8081/livez
+200  staging.localhost:8081/metrics
+200  prod.localhost:8081/healthz
+200  prod.localhost:8081/livez
+200  prod.localhost:8081/metrics
+200  argocd.localhost:8081/
+200  grafana.localhost:8081/login
+
+=== secrets decifrados (restore da chave) ===
+secret/postgres-credentials
+secret/todolist-auth
+secret/postgres-credentials
+secret/todolist-auth
