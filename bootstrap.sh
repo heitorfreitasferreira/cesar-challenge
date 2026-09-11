@@ -100,11 +100,16 @@ resolve_secrets() {
 
   if [[ "$RESEAL" == "0" && -f "$BACKUP" ]]; then
     log "restaurando a chave do controller de ${BACKUP#${ROOT}/} (mantem os selos do Git)"
+    # Remove a chave gerada automaticamente para que so a chave do backup valha
+    # (garante que o cert publico do repo continue valido).
+    kubectl -n "${SEALED_NS}" delete secret \
+      -l sealedsecrets.bitnami.com/sealed-secrets-key --ignore-not-found >/dev/null
     kubectl -n "${SEALED_NS}" apply -f "$BACKUP"
     kubectl -n "${SEALED_NS}" rollout restart deployment/sealed-secrets-controller
     kubectl -n "${SEALED_NS}" rollout status deployment/sealed-secrets-controller --timeout=180s
-    kubeseal --controller-namespace "${SEALED_NS}" --controller-name sealed-secrets-controller \
-      --fetch-cert > "$CERT"
+    # cert.pem publico ja esta no repo; nao sobrescrever (evita arvore suja).
+    [[ -f "$CERT" ]] || kubeseal --controller-namespace "${SEALED_NS}" \
+      --controller-name sealed-secrets-controller --fetch-cert > "$CERT"
     return
   fi
 
