@@ -19,12 +19,17 @@ rules:
     resources: ["pods/log"]
     verbs: ["get"]
   # /cleanup/status suspende/retoma o CronJob (patch de spec.suspend).
-  # resourceNames trava no CronJob da app: sem ele, patch em cronjobs
-  # permitiria reescrever jobTemplate (RCE via imagem arbitraria).
+  # RBAC: resourceNames NAO vale para `list` (so get/delete/update/patch),
+  # entao list fica sem resourceNames — a app descobre o CronJob unico por
+  # list (app.py:_cleanup_cronjob). get/patch seguem travados por nome:
+  # patch irrestrito permitiria reescrever jobTemplate (imagem arbitraria).
+  - apiGroups: ["batch"]
+    resources: ["cronjobs"]
+    verbs: ["list"]
   - apiGroups: ["batch"]
     resources: ["cronjobs"]
     resourceNames: ["todolist-cleanup"]
-    verbs: ["get", "list", "patch"]
+    verbs: ["get", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
