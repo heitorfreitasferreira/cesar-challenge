@@ -76,12 +76,13 @@ install_argocd() {
 ensure_env_files() {
   local file="$1"; shift
   # (re)cria o .env se ausente, vazio ou com algum valor em branco.
+  # Chaves podem ter hifen (ex.: admin-password).
   local needs=0
   if [[ ! -f "$file" ]]; then
     needs=1
-  elif ! grep -qE '^[A-Za-z_]+=.+' "$file"; then
+  elif ! grep -qE '^[A-Za-z0-9_-]+=.+' "$file"; then
     needs=1
-  elif grep -qE '^[A-Za-z_]+=$' "$file"; then
+  elif grep -qE '^[A-Za-z0-9_-]+=$' "$file"; then
     needs=1
   fi
   if [[ "$needs" == "1" ]]; then
@@ -117,8 +118,15 @@ resolve_secrets() {
     kubectl -n "${SEALED_NS}" delete secret \
       -l sealedsecrets.bitnami.com/sealed-secrets-key --ignore-not-found >/dev/null
     kubectl -n "${SEALED_NS}" apply -f "$BACKUP"
-    kubectl -n "${SEALED_NS}" rollout restart deployment/sealed-secrets-controller
-    kubectl -n "${SEALED_NS}" rollout status deployment/sealed-secrets-controller --timeout=180s
+    # Deleta o pod (nao o Deployment) para o controller carregar a chave sem
+    # gerar drift de annotation no que o Argo gerencia.
+    kubectl -n "${SEALED_NS}" delete pod -l name=sealed-secrets-controller --ignore-not-found
+    for _ in $(seq 1 60); do
+      ready="$(kubectl -n "${SEALED_NS}" get pods -l name=sealed-secrets-controller \
+        -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null || true)"
+      [[ "$ready" == "true" ]] && break
+      sleep 5
+    done
     # cert.pem publico ja esta no repo; nao sobrescrever (evita arvore suja).
     [[ -f "$CERT" ]] || kubeseal --controller-namespace "${SEALED_NS}" \
       --controller-name sealed-secrets-controller --fetch-cert > "$CERT"

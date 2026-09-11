@@ -50,12 +50,18 @@ spec:
             # prometheus-client multiprocess escreve arquivos aqui.
             - name: metrics
               mountPath: /tmp/prometheus-multiproc
+          # startupProbe generosa: o gunicorn so escuta depois do create_all()
+          # (que depende do Postgres). Sem ela, a liveness matava o pod durante
+          # a subida fria do banco (restart-loop no primeiro deploy do cluster).
+          startupProbe:
+            httpGet: { path: /livez, port: 5000 }
+            periodSeconds: 5
+            failureThreshold: 24 # ate ~2 min
           livenessProbe:
             # Liveness x Readiness: /livez so diz que o processo vive; se o
             # banco cair o pod NAO reinicia (evita restart-loop), apenas sai
             # do balanceamento ate /healthz voltar.
             httpGet: { path: /livez, port: 5000 }
-            initialDelaySeconds: 10
             periodSeconds: 20
             failureThreshold: 3
           readinessProbe:
