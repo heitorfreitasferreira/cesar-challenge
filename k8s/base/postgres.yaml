@@ -53,6 +53,25 @@ spec:
               command: ["pg_isready", "-U", "todolist"]
             initialDelaySeconds: 5
             periodSeconds: 10
+        # Metricas do banco para o Prometheus (observabilidade).
+        - name: exporter
+          image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1@sha256:ac5ec343104fae0e2d84a27bb8d69b38430a11910c5382cad85d478d2bab713e
+          ports:
+            - name: metrics
+              containerPort: 9187
+          env:
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: postgres-credentials, key: POSTGRES_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: postgres-credentials, key: POSTGRES_PASSWORD } }
+            - name: POSTGRES_DB
+              valueFrom: { secretKeyRef: { name: postgres-credentials, key: POSTGRES_DB } }
+            # $(VAR) expande a partir dos envs acima (mesmo container).
+            - name: DATA_SOURCE_NAME
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@localhost:5432/$(POSTGRES_DB)?sslmode=disable"
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { cpu: 100m, memory: 128Mi }
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -62,8 +81,14 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres
+  labels:
+    app.kubernetes.io/name: postgres
 spec:
   selector:
     app: postgres
   ports:
-    - port: 5432
+    - name: postgres
+      port: 5432
+    - name: metrics # ServiceMonitor do Prometheus usa este nome
+      port: 9187
+      targetPort: metrics

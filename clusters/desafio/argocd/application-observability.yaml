@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability
+  namespace: argocd
+  annotations:
+    # CRDs (ServiceMonitor) vem do kube-prometheus-stack; retry cobre a corrida.
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: observability
+  source:
+    repoURL: https://github.com/heitorfreitasferreira/cesar-challenge.git
+    targetRevision: main
+    path: clusters/desafio/observability
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

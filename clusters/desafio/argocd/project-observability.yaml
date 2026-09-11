@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: observability
+  namespace: argocd
+spec:
+  description: Observabilidade (kube-prometheus-stack + Loki + Alloy)
+  sourceRepos:
+    - https://github.com/heitorfreitasferreira/cesar-challenge.git
+    - https://prometheus-community.github.io/helm-charts
+    - https://grafana.github.io/helm-charts
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: observability
+  # Charts de observabilidade criam CRDs/ClusterRoles (cluster-scoped).
+  clusterResourceWhitelist:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

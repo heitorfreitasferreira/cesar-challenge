@@ -1,0 +1,81 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+spec:
+  project: observability
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 90.0.0
+    helm:
+      releaseName: kube-prometheus-stack
+      values: |
+        alertmanager:
+          enabled: false # sem Alertmanager: foco em logs+metricas (ver DECISIONS)
+        defaultRules:
+          create: false # sem Alertmanager nao ha destino para os alertas
+        prometheus:
+          prometheusSpec:
+            retention: 6h
+            # Selecionar TODOS os ServiceMonitors do cluster (nao so os do release).
+            serviceMonitorSelectorNilUsesHelmValues: false
+            serviceMonitorNamespaceSelector: {}
+            podMonitorSelectorNilUsesHelmValues: false
+            resources:
+              requests: { cpu: 100m, memory: 512Mi }
+              limits: { cpu: "1", memory: 1Gi }
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 2Gi
+        grafana:
+          admin:
+            existingSecret: grafana-admin
+            userKey: admin-user
+            passwordKey: admin-password
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            hosts:
+              - grafana.127.0.0.1.nip.io
+          additionalDataSources:
+            - name: Loki
+              type: loki
+              url: http://loki-gateway.observability.svc.cluster.local
+              access: proxy
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 200m, memory: 256Mi }
+        prometheusOperator:
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 200m, memory: 512Mi }
+        kube-state-metrics:
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { cpu: 100m, memory: 128Mi }
+        prometheus-node-exporter:
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { cpu: 100m, memory: 128Mi }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

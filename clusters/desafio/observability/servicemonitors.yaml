@@ -1,0 +1,65 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: todolist-staging
+  labels:
+    app.kubernetes.io/part-of: todolist
+spec:
+  namespaceSelector:
+    matchNames: [todolist-staging]
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: todolist
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: todolist-production
+  labels:
+    app.kubernetes.io/part-of: todolist
+spec:
+  namespaceSelector:
+    matchNames: [todolist-production]
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: todolist
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postgres-staging
+  labels:
+    app.kubernetes.io/part-of: todolist
+spec:
+  namespaceSelector:
+    matchNames: [todolist-staging]
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  endpoints:
+    - port: metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postgres-production
+  labels:
+    app.kubernetes.io/part-of: todolist
+spec:
+  namespaceSelector:
+    matchNames: [todolist-production]
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  endpoints:
+    - port: metrics
+      interval: 30s

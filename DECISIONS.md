@@ -2,7 +2,7 @@
 
 Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao = 1 item).
 
-- 2026-09-09 · k3d para o cluster. Contexto: padrao do trabalho e k3s; desafio permite
+- 2026-09-09 · k3d para o cluster. Contexto: Desafio permite
   local. Escolha: k3d (k3s em Docker, descartavel em 1 comando). Descarte: kind (nao e k3s),
   minikube (sujaria ~/.minikube), cloud (custo + conta pessoal).
 - 2026-09-09 · 2 repos (opcao A). Contexto: separar CI (app) de CD (GitOps).

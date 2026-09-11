@@ -32,6 +32,9 @@ spec:
             # DB_NAME nao aceita arquivo (app.py le de env): vem do Secret via env.
             - name: DB_NAME
               valueFrom: { secretKeyRef: { name: postgres-credentials, key: POSTGRES_DB } }
+            # Coletor multiprocess do prometheus-client (gunicorn multi-worker).
+            - name: PROMETHEUS_MULTIPROC_DIR
+              value: /tmp/prometheus-multiproc
           # APP_COLOR/APP_NAME (nao segredos) via ConfigMap do overlay.
           envFrom:
             - configMapRef:
@@ -44,6 +47,9 @@ spec:
             - name: creds
               mountPath: /var/run/secrets/todolist
               readOnly: true
+            # prometheus-client multiprocess escreve arquivos aqui.
+            - name: metrics
+              mountPath: /tmp/prometheus-multiproc
           livenessProbe:
             httpGet: { path: /healthz, port: 5000 }
             initialDelaySeconds: 15
@@ -77,16 +83,21 @@ spec:
                       path: SESSION_KEY
                     - key: CLEANUP_TOKEN
                       path: CLEANUP_TOKEN
+        - name: metrics
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: todolist
+  labels:
+    app.kubernetes.io/name: todolist
 spec:
   selector:
     app: todolist
   ports:
-    - port: 80
+    - name: http # ServiceMonitor do Prometheus usa este nome
+      port: 80
       targetPort: 5000
 ---
 apiVersion: policy/v1
