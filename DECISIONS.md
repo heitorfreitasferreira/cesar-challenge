@@ -75,3 +75,6 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
   pessoa; self-approve e impossivel e travaria o proprio fluxo. Escolha: manter
   PR + CI verde + historico linear + sem bypass de admin (push direto continua
   barrado). Descarte: approval=1 (inviavel single-dev).
+- 2026-09-11 · Memoria do Grafana 256Mi -> 768Mi. Contexto: OOMKilled (exit 137)
+  com ~30 dashboards (uso real ~390Mi); UI alternava 200/503. Escolha: subir o
+  limite observando `kubectl top` + restarts em vez de chutar "pequeno".
