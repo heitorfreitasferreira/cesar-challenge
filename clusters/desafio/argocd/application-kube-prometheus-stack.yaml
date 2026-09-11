@@ -24,9 +24,10 @@ spec:
             serviceMonitorNamespaceSelector: {}
             podMonitorSelectorNilUsesHelmValues: false
             resources:
-              # SEM limits de proposito: observando uso real p/ dimensionar
-              # depois (ver DECISIONS). requests mantidos p/ scheduling sao.
+              # Limits dimensionados por uso real medido (kubectl top):
+              # Prometheus ~850Mi, Grafana ~750Mi em regime. ~1.8x de folga.
               requests: { cpu: 100m, memory: 512Mi }
+              limits: { cpu: "1", memory: 1536Mi }
             storageSpec:
               volumeClaimTemplate:
                 spec:
@@ -99,17 +100,21 @@ spec:
                             expression: "$B > 0"
                             settings: {}
           resources:
-            # SEM limits de proposito: observando uso real (ver DECISIONS).
+            # Uso real ~750Mi; limite 1Gi (ver DECISIONS).
             requests: { cpu: 50m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 1Gi }
         prometheusOperator:
           resources:
-            requests: { cpu: 50m, memory: 128Mi }
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 200m, memory: 256Mi }
         kube-state-metrics:
           resources:
             requests: { cpu: 10m, memory: 32Mi }
+            limits: { cpu: 100m, memory: 128Mi }
         prometheus-node-exporter:
           resources:
             requests: { cpu: 10m, memory: 32Mi }
+            limits: { cpu: 100m, memory: 128Mi }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
