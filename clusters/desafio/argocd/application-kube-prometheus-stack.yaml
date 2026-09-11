@@ -86,17 +86,18 @@ spec:
                           relativeTimeRange: { from: 300, to: 0 }
                           model:
                             refId: B
-                            type: threshold
-                            expression: B
-                            intervalMs: 1000
-                            maxDataPoints: 43200
-                            datasource: { type: __expr__, uid: __expr__ }
-                            conditions:
-                              - evaluator: { params: [0], type: gt }
-                                operator: { type: and }
-                                query: { params: [A] }
-                                reducer: { type: last }
-                                type: query
+                            type: reduce
+                            expression: A
+                            reducer: last
+                            settings: { mode: "" }
+                        - refId: C
+                          datasourceUid: __expr__
+                          relativeTimeRange: { from: 300, to: 0 }
+                          model:
+                            refId: C
+                            type: math
+                            expression: "$B > 0"
+                            settings: {}
           resources:
             # SEM limits de proposito: observando uso real (ver DECISIONS).
             requests: { cpu: 50m, memory: 256Mi }
