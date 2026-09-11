@@ -49,11 +49,23 @@ create_cluster() {
   kubectl wait --for=condition=Ready nodes --all --timeout=180s
 }
 
+wait_for_controller() {
+  # O Argo cria o controller de forma assincrona; espera ele existir.
+  log "aguardando o Argo criar o controller de secrets"
+  for _ in $(seq 1 60); do
+    kubectl -n "${SEALED_NS}" get deployment/sealed-secrets-controller >/dev/null 2>&1 && break
+    sleep 5
+  done
+  kubectl -n "${SEALED_NS}" rollout status deployment/sealed-secrets-controller --timeout=240s
+}
+
 install_argocd() {
   log "instalando Argo CD"
   kubectl apply -f "${ROOT}/clusters/desafio/argocd/namespace.yaml"
   kubectl apply -n "${ARGOCD_NS}" -f "${ROOT}/clusters/desafio/argocd/install.yaml"
   kubectl -n "${ARGOCD_NS}" rollout status deployment/argocd-server --timeout=300s
+  kubectl -n "${ARGOCD_NS}" rollout status statefulset/argocd-application-controller --timeout=300s
+  kubectl -n "${ARGOCD_NS}" rollout status deployment/argocd-repo-server --timeout=300s
 
   # UI via Ingress (bonus): argocd-server em --insecure + Ingress no Traefik.
   kubectl -n "${ARGOCD_NS}" patch deployment argocd-server --type=json \
@@ -206,7 +218,7 @@ main() {
   create_cluster
   install_argocd
   kubectl apply -f "${ROOT}/clusters/desafio/argocd/application-sealed.yaml"
-  kubectl -n "${SEALED_NS}" rollout status deployment/sealed-secrets-controller --timeout=240s
+  wait_for_controller
   resolve_secrets
   apply_platform
   wait_ready
