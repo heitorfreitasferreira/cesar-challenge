@@ -41,7 +41,9 @@ da app nao e segunda fonte de verdade.
 | Argo CD UI (bonus) | argocd | — | http://argocd.localhost | — |
 | Grafana | observability | — | http://grafana.localhost | — |
 
-Trocar a cor de um env = 1 linha no `configmap-patch.yaml` do overlay + push.
+Trocar a cor de um env = 1 linha (`APP_COLOR`) no `configMapGenerator` do
+overlay + push: o hash do ConfigMap muda, o kustomize reescreve o `envFrom` do
+Deployment e o rollout acontece sozinho (sem restart manual).
 Login app: `admin` + senha do SealedSecret (ver `/k-secrets` no opencode).
 Login Grafana: `admin` + senha em `envs/grafana-observability.env` (local, gitignored).
 
