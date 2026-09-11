@@ -44,3 +44,34 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
 - 2026-09-09 · Historico linear, sem purge. Contexto: `CHANGEME` antigo no historico.
   Escolha: correcao para frente (SealedSecrets novos), sem filter-repo/force-push;
   e teste tecnico com segredos sinteticos, beleza do historico > purge.
+- 2026-09-11 · Observabilidade com kube-prometheus-stack + Loki + Alloy (via Argo/Helm
+  pinado). Contexto: pedido de bonus com metricas de cluster, recursos, banco e app.
+  Escolha: stack padrao do mercado com charts pinados e dashboards prontos
+  (k8s Compute Resources) + 2 dashboards proprios. Descarte: Prometheus "avulso"
+  (sem operator/ServiceMonitor/dashboards) e Elastic (pesado para k3d).
+- 2026-09-11 · Alertmanager desligado e defaultRules off. Contexto: alerta sem
+  destinatario em ambiente de teste polui o Prometheus. Escolha: desligar e
+  documentar; ligar e 1 flag quando houver on-call.
+- 2026-09-11 · Loki single-binary + filesystem + retencao 72h. Contexto: k3d
+  descartavel, sem S3. Escolha: minimal com PVC local; descarte: SimpleScalable
+  (6+ pods sem ganho), MinIO.
+- 2026-09-11 · Coleta de logs com Alloy (nao Promtail). Contexto: Promtail esta
+  em EOL; Alloy e o sucessor oficial. Escolha: DaemonSet Alloy com
+  discovery.kubernetes -> loki.write. Descarte: Promtail (legado).
+- 2026-09-11 · Metricas da app aditivas (prometheus-flask-exporter com
+  GunicornInternalPrometheusMetrics). Contexto: gunicorn com 2 workers duplica
+  contadores se cada worker expuser o proprio registry. Escolha: coletor
+  multiprocess (PROMETHEUS_MULTIPROC_DIR + emptyDir), nenhuma rota alterada.
+- 2026-09-11 · Metricas do banco via postgres-exporter sidecar no pod do Postgres.
+  Contexto: sem credencial extra e sem Service novo apontando para fora.
+  Escolha: sidecar + porta `metrics` no Service existente + ServiceMonitor.
+- 2026-09-11 · Dashboard do Postgres: grafana.com #9628 (template pronto),
+  transformado (datasource `Prometheus`, `__inputs` removidos) e versionado.
+- 2026-09-11 · Argo CD UI via Ingress no mesmo LB (bonus). Contexto: port-forward
+  nao e entregavel. Escolha: Ingress + `argocd-server --insecure` (TLS terminaria
+  no LB em ambiente real); patch JSON versionado. Descarte: ServersTransport do
+  Traefik (nao surtiu efeito nesta versao do k3s).
+- 2026-09-11 · production: PR obrigatorio com 0 approvals. Contexto: repo de uma
+  pessoa; self-approve e impossivel e travaria o proprio fluxo. Escolha: manter
+  PR + CI verde + historico linear + sem bypass de admin (push direto continua
+  barrado). Descarte: approval=1 (inviavel single-dev).

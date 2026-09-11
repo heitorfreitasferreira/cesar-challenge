@@ -1,0 +1,34 @@
+=== argocd apps (2026-09-11 13:07:09 UTC) ===
+NAME                    SYNC STATUS   HEALTH STATUS
+alloy                   Synced        Healthy
+kube-prometheus-stack   Synced        Healthy
+loki                    Synced        Healthy
+observability           Synced        Healthy
+sealed-secrets          Synced        Healthy
+todolist-production     Synced        Healthy
+todolist-staging        Synced        Healthy
+
+=== observability pods ===
+NAME                                                        READY   STATUS    RESTARTS   AGE
+alloy-2rwwz                                                 2/2     Running   0          20m
+alloy-s5ctz                                                 2/2     Running   0          20m
+kube-prometheus-stack-grafana-56d48544c6-8h8sb              3/3     Running   0          19m
+kube-prometheus-stack-kube-state-metrics-567cb44c7f-bm9sh   1/1     Running   0          19m
+kube-prometheus-stack-operator-6c4b969fdc-wszvl             1/1     Running   0          19m
+kube-prometheus-stack-prometheus-node-exporter-2qlts        1/1     Running   0          19m
+kube-prometheus-stack-prometheus-node-exporter-cbslj        1/1     Running   0          19m
+loki-0                                                      2/2     Running   0          20m
+loki-gateway-54d4c5b8fb-2w68f                               1/1     Running   0          20m
+prometheus-kube-prometheus-stack-prometheus-0               2/2     Running   0          19m
+
+=== dashboards (Grafana API) ===
+ - TodoList — Aplicacao e Recursos
+ - PostgreSQL Database
+
+=== endpoints ===
+argocd UI  -> 200
+grafana UI -> 302
+staging /metrics -> 200
+prod /metrics -> 200
+staging /healthz -> 200
+prod /healthz -> 200
