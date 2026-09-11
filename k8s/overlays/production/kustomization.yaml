@@ -16,7 +16,7 @@ patches:
 configMapGenerator:
   - name: todolist-config
     literals:
-      - APP_COLOR=blue
+      - APP_COLOR=yellow
       - APP_NAME=TodoList
 images:
   - name: ghcr.io/heitorfreitasferreira/todolist-app
