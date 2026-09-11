@@ -87,3 +87,8 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
   Residual conhecido: `patch` com resourceNames impede pivor p/ outros CronJobs,
   mas nao restringe por campo (jobTemplate do proprio). Aceito: namespace e so
   da app; alternativa futura = SA separada p/ escrita.
+- 2026-09-11 · Pod/ReplicaSet/Job na allowlist do AppProject (visibilidade).
+  Contexto: arvore do Argo mostrava so os pais (sem Pods, sem aba LOGS).
+  Escolha: adicionar as 3 kinds a `project.yaml` — view-only (nao existem no
+  Git, o Argo nao passa a gerenciar nada). O Argo esconde da arvore recursos
+  fora da allowlist, e Pods herdam visibilidade do ReplicaSet (Jobs, do CronJob).
