@@ -1,0 +1,61 @@
+name: validate
+
+# Gates do repo GitOps: o que o Argo vai aplicar tem que buildar e ser valido.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  KUSTOMIZE_VERSION: v5.7.1
+  KUBECONFORM_VERSION: v0.8.0
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Instalar kustomize (pinado)
+        run: |
+          curl -sL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" -o /tmp/kustomize.tgz
+          tar -xzf /tmp/kustomize.tgz -C /tmp
+          sudo install -m 755 /tmp/kustomize /usr/local/bin/kustomize
+          kustomize version
+
+      - name: Instalar kubeconform (pinado)
+        run: |
+          curl -sL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" -o /tmp/kc.tgz
+          tar -xzf /tmp/kc.tgz -C /tmp
+          sudo install -m 755 /tmp/kubeconform /usr/local/bin/kubeconform
+          kubeconform -v
+
+      - name: Build + validacao de schema dos overlays
+        run: |
+          for path in k8s/overlays/staging k8s/overlays/production clusters/desafio/observability; do
+            echo "== $path =="
+            kustomize build "$path" | kubeconform -strict -summary -ignore-missing-schemas
+          done
+
+      - name: Inventario de secrets em claro (gate)
+        run: |
+          if grep -rniE 'CHANGEME|BEGIN [A-Z ]*PRIVATE KEY' \
+               --include='*.yaml' --include='*.yml' --include='*.env' \
+               --include='*.example' --exclude-dir=.github . ; then
+            echo "::error::possivel segredo em claro no repo"; exit 1
+          fi
+          echo "sem segredos em claro"
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

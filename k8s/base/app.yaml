@@ -51,13 +51,18 @@ spec:
             - name: metrics
               mountPath: /tmp/prometheus-multiproc
           livenessProbe:
-            httpGet: { path: /healthz, port: 5000 }
-            initialDelaySeconds: 15
+            # Liveness x Readiness: /livez so diz que o processo vive; se o
+            # banco cair o pod NAO reinicia (evita restart-loop), apenas sai
+            # do balanceamento ate /healthz voltar.
+            httpGet: { path: /livez, port: 5000 }
+            initialDelaySeconds: 10
             periodSeconds: 20
+            failureThreshold: 3
           readinessProbe:
             httpGet: { path: /healthz, port: 5000 }
             initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
           resources:
             requests: { cpu: 100m, memory: 128Mi }
             limits: { cpu: 500m, memory: 512Mi }
