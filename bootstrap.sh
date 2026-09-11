@@ -204,18 +204,25 @@ show_access() {
   cat <<EOF
 
 Pronto. Acesso (LB 127.0.0.1:8081):
-  staging      http://staging.127.0.0.1.nip.io:8081     (login admin / senha em envs/staging.env)
-  production   http://prod.127.0.0.1.nip.io:8081        (login admin / senha em envs/production.env)
-  Argo CD UI   http://argocd.127.0.0.1.nip.io:8081      (admin / ${argopw})
-  Grafana      http://grafana.127.0.0.1.nip.io:8081     (admin / ${grafanapw})
+  staging      http://staging.localhost:8081     (login admin / senha em envs/staging.env)
+  production   http://prod.localhost:8081        (login admin / senha em envs/production.env)
+  Argo CD UI   http://argocd.localhost:8081      (admin / ${argopw})
+  Grafana      http://grafana.localhost:8081     (admin / ${grafanapw})
 EOF
 }
 
 teardown() {
   log "teardown"
   k3d cluster delete "$CLUSTER" || true
-  docker volume prune -f || true
-  docker network prune -f || true
+  # Prune global e agressivo: pode remover volumes/redes de OUTROS projetos
+  # (ex.: ambiente de trabalho). So roda com PRUNE=1 explicito.
+  if [[ "${PRUNE:-0}" == "1" ]]; then
+    warn "PRUNE=1: rodando docker volume/network prune globais"
+    docker volume prune -f || true
+    docker network prune -f || true
+  else
+    warn "prune global pulado (use PRUNE=1 se quiser limpar volumes/redes orfaos)"
+  fi
   rm -f "$KUBECONFIG"
   warn "repos e backup de chave NAO foram removidos (remocao manual se desejado)"
 }

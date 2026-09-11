@@ -36,10 +36,10 @@ da app nao e segunda fonte de verdade.
 
 | Env | Namespace | Cor | URL | Sync Argo |
 |---|---|---|---|---|
-| staging | `todolist-staging` | green | http://staging.127.0.0.1.nip.io:8081 | automatico |
-| production | `todolist-production` | blue | http://prod.127.0.0.1.nip.io:8081 | manual (promocao) |
-| Argo CD UI (bonus) | argocd | — | http://argocd.127.0.0.1.nip.io:8081 | — |
-| Grafana | observability | — | http://grafana.127.0.0.1.nip.io:8081 | — |
+| staging | `todolist-staging` | green | http://staging.localhost:8081 | automatico |
+| production | `todolist-production` | blue | http://prod.localhost:8081 | manual (promocao) |
+| Argo CD UI (bonus) | argocd | — | http://argocd.localhost:8081 | — |
+| Grafana | observability | — | http://grafana.localhost:8081 | — |
 
 Trocar a cor de um env = 1 linha no `configmap-patch.yaml` do overlay + push.
 Login app: `admin` + senha do SealedSecret (ver `/k-secrets` no opencode).

@@ -4,7 +4,7 @@ metadata:
   name: todolist
 spec:
   rules:
-    - host: staging.127.0.0.1.nip.io
+    - host: staging.localhost
       http:
         paths:
           - path: /

@@ -4,7 +4,7 @@ metadata:
   name: todolist
 spec:
   rules:
-    - host: prod.127.0.0.1.nip.io
+    - host: prod.localhost
       http:
         paths:
           - path: /

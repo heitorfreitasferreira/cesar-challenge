@@ -33,7 +33,7 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
   Escolha: `projected` com `items:` renomeando `POSTGRES_*` -> `DB_*`.
 - 2026-09-09 · Host routing, nao 2a porta. Contexto: duas portas host -> mesma
   porta 80 do LB perdem a distincao no NAT; Traefik so diferencia por Host.
-  Escolha: 1 porta (8081) + `staging/prod.127.0.0.1.nip.io` (sem /etc/hosts).
+  Escolha: 1 porta (8081) + `staging/prod.localhost` (sem /etc/hosts).
   Descarte: entrypoint Traefik extra (complexidade sem ganho na demo).
 - 2026-09-09 · Bump cirurgico, nao kustomize edit. Contexto: `kustomize edit set image`
   reescrevia o kustomization (comentarios deslocados, `newName` espurio, `newTag`
@@ -125,3 +125,14 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
   Escolha: restaura a chave do backup local (mantem os selos) ou, sem backup,
   cria os `.env` sinteticos e re-sela, commitando. Descartado: versionar a chave
   privada (vazamento) e depender de passo manual.
+- 2026-09-11 · Hosts em `*.localhost` em vez de `*.127.0.0.1.nip.io`. Contexto:
+  no rehearsal do zero o nip.io passou a resolver para um IPv6/IP de parking
+  (DNS da rede sequestrando wildcard publico), quebrando o browser. Escolha:
+  `staging/prod/argocd/grafana.localhost` (RFC 6761: resolve para loopback sem
+  DNS externo). Descarte: nip.io/sslip.io (dependem de DNS publico) e editar
+  `/etc/hosts` (exigiria sudo).
+- 2026-09-11 · `initContainer wait-for-postgres` + `startupProbe`. Contexto: no
+  primeiro deploy do cluster o Postgres ainda subia e a app entrava em CrashLoop
+  (gunicorn roda `create_all()` no import e sai se o banco nao responde).
+  Escolha: initContainer espera o `pg_isready` e startupProbe da ate 2 min antes
+  de ligar liveness/readiness. Efeito: zero restarts no bootstrap do zero.
