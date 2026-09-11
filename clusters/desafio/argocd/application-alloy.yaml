@@ -19,6 +19,10 @@ spec:
         alloy:
           mounts:
             varlog: true
+          # Uso real ~310Mi (processa logs de todos os pods); limite 512Mi.
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
           configMap:
             create: true
             content: |
@@ -103,10 +107,6 @@ spec:
                   url = "http://loki-gateway.observability.svc.cluster.local/loki/api/v1/push"
                 }
               }
-        resources:
-          # Uso real ~310Mi (processa logs de todos os pods); limite 512Mi.
-          requests: { cpu: 50m, memory: 128Mi }
-          limits: { cpu: 500m, memory: 512Mi }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
