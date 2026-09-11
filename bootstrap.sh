@@ -1,0 +1,211 @@
+#!/usr/bin/env bash
+# ABOUTME: Bootstrap do cluster desafio (R1): cluster + Argo + secrets + apps.
+# ABOUTME: Repetivel e sem passos manuais no console. Uso: ./bootstrap.sh [--reseal]
+#
+# Fluxo:
+#   1. cria o cluster k3d por codigo (k3d-config.yaml)
+#   2. instala Argo CD, projetos e o controller do Sealed Secrets
+#   3. resolve os secrets: restaura a chave do controller (se houver backup
+#      local) OU re-sela a partir dos .env (criando-os se nao existirem)
+#   4. aplica as Applications e espera tudo ficar Synced/Healthy
+#
+# Teardown: ./bootstrap.sh teardown
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export KUBECONFIG="${HOME}/.kube/desafio-k3d.kubeconfig"   # isolado (AGENTS.md)
+CLUSTER="desafio"
+ARGOCD_NS="argocd"
+SEALED_NS="kube-system"
+CERT="${ROOT}/clusters/desafio/sealed-secrets/cert.pem"
+BACKUP="${ROOT}/sealed-backup/key.yaml"
+RESEAL=0
+[[ "${1:-}" == "--reseal" ]] && RESEAL=1
+
+log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33m[!]\033[0m %s\n' "$*"; }
+die()  { printf '\033[1;31m[x]\033[0m %s\n' "$*" >&2; exit 1; }
+
+rand() { openssl rand -hex "${1:-16}"; }
+
+preflight() {
+  log "preflight: ferramentas"
+  for t in k3d kubectl kustomize kubeseal openssl curl git; do
+    command -v "$t" >/dev/null || die "ferramenta ausente: $t"
+  done
+  log "preflight: portas livres (6444, 8081, 8444)"
+  if ss -tlnp 2>/dev/null | grep -qE ':(6444|8081|8444)\b'; then
+    warn "alguma porta ja em uso — se o cluster ja existe, isso e esperado"
+  fi
+}
+
+create_cluster() {
+  if k3d cluster list 2>/dev/null | grep -q "^${CLUSTER}\b"; then
+    log "cluster '${CLUSTER}' ja existe — reaproveitando"
+  else
+    log "criando cluster '${CLUSTER}' a partir do k3d-config.yaml"
+    k3d cluster create --config "${ROOT}/clusters/desafio/k3d-config.yaml"
+  fi
+  kubectl wait --for=condition=Ready nodes --all --timeout=180s
+}
+
+install_argocd() {
+  log "instalando Argo CD"
+  kubectl apply -f "${ROOT}/clusters/desafio/argocd/namespace.yaml"
+  kubectl apply -n "${ARGOCD_NS}" -f "${ROOT}/clusters/desafio/argocd/install.yaml"
+  kubectl -n "${ARGOCD_NS}" rollout status deployment/argocd-server --timeout=300s
+
+  # UI via Ingress (bonus): argocd-server em --insecure + Ingress no Traefik.
+  kubectl -n "${ARGOCD_NS}" patch deployment argocd-server --type=json \
+    --patch-file "${ROOT}/clusters/desafio/argocd/argocd-server-insecure.patch.json" >/dev/null 2>&1 || true
+  kubectl apply -f "${ROOT}/clusters/desafio/argocd/argocd-ui-ingress.yaml"
+}
+
+ensure_env_files() {
+  local file="$1"; shift
+  # (re)cria o .env se ausente, vazio ou com algum valor em branco.
+  local needs=0
+  if [[ ! -f "$file" ]]; then
+    needs=1
+  elif ! grep -qE '^[A-Za-z_]+=.+' "$file"; then
+    needs=1
+  elif grep -qE '^[A-Za-z_]+=$' "$file"; then
+    needs=1
+  fi
+  if [[ "$needs" == "1" ]]; then
+    warn "gerando ${file#${ROOT}/} (sintetico)"
+    printf '%s\n' "$@" > "$file"
+    chmod 600 "$file"
+  else
+    log "mantendo ${file#${ROOT}/}"
+  fi
+}
+
+resolve_secrets() {
+  log "resolvendo secrets"
+  mkdir -p "$(dirname "$BACKUP")"; chmod 700 "$(dirname "$BACKUP")" 2>/dev/null || true
+
+  ensure_env_files "${ROOT}/envs/staging.env" \
+    "ADMIN_USER=admin" "ADMIN_PASSWORD=$(rand 12)" \
+    "SESSION_KEY=$(rand 32)" "CLEANUP_TOKEN=$(rand 16)"
+  ensure_env_files "${ROOT}/envs/production.env" \
+    "ADMIN_USER=admin" "ADMIN_PASSWORD=$(rand 12)" \
+    "SESSION_KEY=$(rand 32)" "CLEANUP_TOKEN=$(rand 16)"
+  ensure_env_files "${ROOT}/envs/postgres-staging.env" \
+    "POSTGRES_USER=todolist" "POSTGRES_PASSWORD=$(rand 16)" "POSTGRES_DB=todolist"
+  ensure_env_files "${ROOT}/envs/postgres-production.env" \
+    "POSTGRES_USER=todolist" "POSTGRES_PASSWORD=$(rand 16)" "POSTGRES_DB=todolist"
+  ensure_env_files "${ROOT}/envs/grafana-observability.env" \
+    "admin-user=admin" "admin-password=$(rand 12)"
+
+  if [[ "$RESEAL" == "0" && -f "$BACKUP" ]]; then
+    log "restaurando a chave do controller de ${BACKUP#${ROOT}/} (mantem os selos do Git)"
+    kubectl -n "${SEALED_NS}" apply -f "$BACKUP"
+    kubectl -n "${SEALED_NS}" rollout restart deployment/sealed-secrets-controller
+    kubectl -n "${SEALED_NS}" rollout status deployment/sealed-secrets-controller --timeout=180s
+    kubeseal --controller-namespace "${SEALED_NS}" --controller-name sealed-secrets-controller \
+      --fetch-cert > "$CERT"
+    return
+  fi
+
+  warn "sem backup de chave (ou --reseal): re-selando com o cert atual do cluster"
+  kubeseal --controller-namespace "${SEALED_NS}" --controller-name sealed-secrets-controller \
+    --fetch-cert > "$CERT"
+  seal "${ROOT}/envs/postgres-staging.env"    todolist-staging    postgres-credentials "${ROOT}/k8s/overlays/staging/sealed-postgres.yaml"
+  seal "${ROOT}/envs/staging.env"             todolist-staging    todolist-auth        "${ROOT}/k8s/overlays/staging/sealed-auth.yaml"
+  seal "${ROOT}/envs/postgres-production.env" todolist-production postgres-credentials "${ROOT}/k8s/overlays/production/sealed-postgres.yaml"
+  seal "${ROOT}/envs/production.env"          todolist-production todolist-auth        "${ROOT}/k8s/overlays/production/sealed-auth.yaml"
+  seal "${ROOT}/envs/grafana-observability.env" observability     grafana-admin        "${ROOT}/clusters/desafio/observability/sealed-grafana-admin.yaml"
+
+  if ! git -C "$ROOT" diff --quiet -- 'k8s/overlays/*/sealed-*.yaml' 'clusters/desafio/observability/sealed-*.yaml'; then
+    log "commitando os selos re-gerados (o Argo le do Git)"
+    git -C "$ROOT" add 'k8s/overlays/*/sealed-*.yaml' 'clusters/desafio/observability/sealed-*.yaml'
+    git -C "$ROOT" commit -m "chore: reseal secrets ($(date +%F))"
+    if [[ "${NO_PUSH:-0}" == "0" ]]; then
+      git -C "$ROOT" pull --rebase origin main && git -C "$ROOT" push origin main
+    else
+      warn "NO_PUSH=1: os selos ficaram locais; faca push antes de esperar o Argo"
+    fi
+  else
+    log "selos inalterados"
+  fi
+
+  log "backup da chave do controller em ${BACKUP#${ROOT}/} (NAO versionado)"
+  kubectl -n "${SEALED_NS}" get secret \
+    -l sealedsecrets.bitnami.com/sealed-secrets-key=active -o yaml > "$BACKUP"
+  chmod 600 "$BACKUP"
+}
+
+seal() { # envfile namespace name output
+  kubectl create secret generic "$3" -n "$2" --from-env-file="$1" \
+    --dry-run=client -o yaml \
+    | kubeseal --cert "$CERT" --scope strict --namespace "$2" --name "$3" \
+        --format yaml > "$4"
+  log "selado $2/$3 -> ${4#${ROOT}/}"
+}
+
+apply_platform() {
+  log "aplicando projetos e Applications"
+  kubectl apply -f "${ROOT}/clusters/desafio/argocd/project.yaml"
+  kubectl apply -f "${ROOT}/clusters/desafio/argocd/project-observability.yaml"
+  for app in \
+    application-sealed \
+    application-staging application-production \
+    application-kube-prometheus-stack application-loki application-alloy application-observability ; do
+    kubectl apply -f "${ROOT}/clusters/desafio/argocd/${app}.yaml"
+  done
+}
+
+wait_ready() {
+  log "aguardando as Applications ficarem Synced/Healthy (ate 10 min)"
+  local deadline=$((SECONDS + 600))
+  while (( SECONDS < deadline )); do
+    local out
+    out="$(kubectl -n "${ARGOCD_NS}" get applications \
+      -o custom-columns='NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status' --no-headers 2>/dev/null || true)"
+    if [[ -n "$out" ]] && ! awk '{print $2"/"$3}' <<<"$out" | grep -qvE 'Synced/Healthy'; then
+      printf '%s\n' "$out"; return 0
+    fi
+    sleep 15
+  done
+  warn "timeout; estado atual:"; kubectl -n "${ARGOCD_NS}" get applications || true
+}
+
+show_access() {
+  local argopw grafanapw
+  argopw="$(kubectl -n "${ARGOCD_NS}" get secret argocd-initial-admin-secret \
+    -o jsonpath='{.data.password}' 2>/dev/null | base64 -d || echo '?')"
+  grafanapw="$(grep -h admin-password "${ROOT}/envs/grafana-observability.env" 2>/dev/null | cut -d= -f2 || echo '?')"
+  cat <<EOF
+
+Pronto. Acesso (LB 127.0.0.1:8081):
+  staging      http://staging.127.0.0.1.nip.io:8081     (login admin / senha em envs/staging.env)
+  production   http://prod.127.0.0.1.nip.io:8081        (login admin / senha em envs/production.env)
+  Argo CD UI   http://argocd.127.0.0.1.nip.io:8081      (admin / ${argopw})
+  Grafana      http://grafana.127.0.0.1.nip.io:8081     (admin / ${grafanapw})
+EOF
+}
+
+teardown() {
+  log "teardown"
+  k3d cluster delete "$CLUSTER" || true
+  docker volume prune -f || true
+  docker network prune -f || true
+  rm -f "$KUBECONFIG"
+  warn "repos e backup de chave NAO foram removidos (remocao manual se desejado)"
+}
+
+main() {
+  if [[ "${1:-}" == "teardown" ]]; then teardown; return; fi
+  preflight
+  create_cluster
+  install_argocd
+  kubectl apply -f "${ROOT}/clusters/desafio/argocd/application-sealed.yaml"
+  kubectl -n "${SEALED_NS}" rollout status deployment/sealed-secrets-controller --timeout=240s
+  resolve_secrets
+  apply_platform
+  wait_ready
+  show_access
+}
+
+main "$@"
