@@ -3,5 +3,5 @@ kind: ConfigMap
 metadata:
   name: todolist-config
 data:
-  APP_COLOR: "green"
+  APP_COLOR: "purple"
   APP_NAME: "TodoList [staging]"
