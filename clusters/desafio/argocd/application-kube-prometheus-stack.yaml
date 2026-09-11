@@ -45,6 +45,9 @@ spec:
             ingressClassName: traefik
             hosts:
               - grafana.localhost
+            tls:
+              - hosts:
+                  - grafana.localhost
           additionalDataSources:
             - name: Loki
               # uid fixo: as regras de alerta referenciam "loki".

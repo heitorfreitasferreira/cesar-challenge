@@ -33,7 +33,7 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
   Escolha: `projected` com `items:` renomeando `POSTGRES_*` -> `DB_*`.
 - 2026-09-09 · Host routing, nao 2a porta. Contexto: duas portas host -> mesma
   porta 80 do LB perdem a distincao no NAT; Traefik so diferencia por Host.
-  Escolha: 1 porta (8081) + `staging/prod.localhost` (sem /etc/hosts).
+  Escolha: 1 porta (80) + `staging/prod.localhost` (sem /etc/hosts).
   Descarte: entrypoint Traefik extra (complexidade sem ganho na demo).
 - 2026-09-09 · Bump cirurgico, nao kustomize edit. Contexto: `kustomize edit set image`
   reescrevia o kustomization (comentarios deslocados, `newName` espurio, `newTag`
@@ -136,3 +136,9 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
   (gunicorn roda `create_all()` no import e sai se o banco nao responde).
   Escolha: initContainer espera o `pg_isready` e startupProbe da ate 2 min antes
   de ligar liveness/readiness. Efeito: zero restarts no bootstrap do zero.
+- 2026-09-11 · LB em 80/443 (sem sufixo de porta) + TLS terminado no Ingress.
+  Contexto: URIs mais limpas (`http://staging.localhost`) e demonstrar terminacao
+  TLS. Escolha: publicar o Traefik em 80 e 443 e habilitar `tls` nos Ingress (sem
+  `secretName` -> cert self-signed padrao do Traefik). HTTP segue funcionando para
+  a demo. Descarte: cert-manager + CA confiavel agora (custo/risco para um cluster
+  local); em producao o caminho e cert-manager + ACME/CA interna.

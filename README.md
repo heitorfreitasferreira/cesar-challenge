@@ -11,7 +11,7 @@ da app nao e segunda fonte de verdade.
 |---|---|
 | **R1** Provisionamento automatizado | Cluster k3d por codigo (`clusters/desafio/k3d-config.yaml`); Argo CD, controller de secrets e apps aplicados por `bootstrap.sh` (1 comando, repetivel, sem console). Infra de observabilidade via Helm charts pinados. |
 | **R2** Deploy automatizado | `git push` no repo da app -> CI (test + build GHCR) -> bump de digest no overlay -> Argo CD sincroniza. Nada manual. |
-| **R3** Acesso externo | Ingress (Traefik) no LB `127.0.0.1:8081`, por host: staging/production/argocd/grafana. |
+| **R3** Acesso externo | Ingress (Traefik) no LB `127.0.0.1:80/443`, por host: staging/production/argocd/grafana. |
 | **R4** Escalabilidade e resiliencia | 2 replicas + HPA (2..5) + PDB + probes separadas (liveness `/livez`, readiness `/healthz`) + rolling update `maxUnavailable: 0` + requests/limits. |
 | **R5** Documentacao | Este README, `DECISIONS.md` (escolhas/descartes/desafios), `evidencias/` (logs/estado) e screenshots. |
 
@@ -26,7 +26,7 @@ da app nao e segunda fonte de verdade.
    k8s/base + overlays/ + clusters/
         │  Argo CD reconcilia
         ▼
-   k3d cluster "desafio" ── Traefik (127.0.0.1:8081)
+   k3d cluster "desafio" ── Traefik (127.0.0.1:80/443)
         ├── todolist-staging      (auto-sync)
         ├── todolist-production   (sync manual = promocao)
         └── observability         (Prometheus/Grafana/Loki/Alloy)
@@ -36,10 +36,10 @@ da app nao e segunda fonte de verdade.
 
 | Env | Namespace | Cor | URL | Sync Argo |
 |---|---|---|---|---|
-| staging | `todolist-staging` | green | http://staging.localhost:8081 | automatico |
-| production | `todolist-production` | blue | http://prod.localhost:8081 | manual (promocao) |
-| Argo CD UI (bonus) | argocd | — | http://argocd.localhost:8081 | — |
-| Grafana | observability | — | http://grafana.localhost:8081 | — |
+| staging | `todolist-staging` | green | http://staging.localhost | automatico |
+| production | `todolist-production` | blue | http://prod.localhost | manual (promocao) |
+| Argo CD UI (bonus) | argocd | — | http://argocd.localhost | — |
+| Grafana | observability | — | http://grafana.localhost | — |
 
 Trocar a cor de um env = 1 linha no `configmap-patch.yaml` do overlay + push.
 Login app: `admin` + senha do SealedSecret (ver `/k-secrets` no opencode).

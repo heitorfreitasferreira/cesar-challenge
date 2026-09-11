@@ -33,8 +33,8 @@ preflight() {
   for t in k3d kubectl kustomize kubeseal openssl curl git; do
     command -v "$t" >/dev/null || die "ferramenta ausente: $t"
   done
-  log "preflight: portas livres (6444, 8081, 8444)"
-  if ss -tlnp 2>/dev/null | grep -qE ':(6444|8081|8444)\b'; then
+  log "preflight: portas livres (6444, 80, 443)"
+  if ss -tlnp 2>/dev/null | grep -qE ':(6444|80|443)\b'; then
     warn "alguma porta ja em uso — se o cluster ja existe, isso e esperado"
   fi
 }
@@ -203,11 +203,11 @@ show_access() {
   grafanapw="$(grep -h admin-password "${ROOT}/envs/grafana-observability.env" 2>/dev/null | cut -d= -f2 || echo '?')"
   cat <<EOF
 
-Pronto. Acesso (LB 127.0.0.1:8081):
-  staging      http://staging.localhost:8081     (login admin / senha em envs/staging.env)
-  production   http://prod.localhost:8081        (login admin / senha em envs/production.env)
-  Argo CD UI   http://argocd.localhost:8081      (admin / ${argopw})
-  Grafana      http://grafana.localhost:8081     (admin / ${grafanapw})
+Pronto. Acesso (LB 127.0.0.1:80/443; hosts *.localhost):
+  staging      http://staging.localhost     (login admin / senha em envs/staging.env)
+  production   http://prod.localhost        (login admin / senha em envs/production.env)
+  Argo CD UI   http://argocd.localhost      (admin / ${argopw})
+  Grafana      http://grafana.localhost     (admin / ${grafanapw})
 EOF
 }
 

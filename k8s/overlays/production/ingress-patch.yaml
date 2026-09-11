@@ -3,6 +3,9 @@ kind: Ingress
 metadata:
   name: todolist
 spec:
+  tls:
+    - hosts:
+        - prod.localhost
   rules:
     - host: prod.localhost
       http:

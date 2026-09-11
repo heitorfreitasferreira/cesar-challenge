@@ -8,6 +8,9 @@ metadata:
   namespace: argocd
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - argocd.localhost
   rules:
     - host: argocd.localhost
       http:

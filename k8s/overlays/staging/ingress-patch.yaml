@@ -3,6 +3,11 @@ kind: Ingress
 metadata:
   name: todolist
 spec:
+  # TLS terminado no Ingress. Sem secretName o Traefik usa o cert self-signed
+  # padrao (ok para local). Em producao: cert-manager + ACME/CA interna.
+  tls:
+    - hosts:
+        - staging.localhost
   rules:
     - host: staging.localhost
       http:
