@@ -217,6 +217,9 @@ main() {
   preflight
   create_cluster
   install_argocd
+  # Projetos ANTES das Applications (o Application valida o AppProject ja na spec).
+  kubectl apply -f "${ROOT}/clusters/desafio/argocd/project.yaml"
+  kubectl apply -f "${ROOT}/clusters/desafio/argocd/project-observability.yaml"
   kubectl apply -f "${ROOT}/clusters/desafio/argocd/application-sealed.yaml"
   wait_for_controller
   resolve_secrets
