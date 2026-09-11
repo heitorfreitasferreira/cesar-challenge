@@ -243,7 +243,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{namespace=\"todolist-production\", level=~\"error|warning\"}",
+          "expr": "{namespace=\"todolist-production\", level=~\"(?i)(error|warning)\"}",
           "datasource": {
             "type": "loki",
             "uid": "loki"

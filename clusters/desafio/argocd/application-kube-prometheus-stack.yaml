@@ -80,7 +80,7 @@ spec:
                             editorMode: code
                             queryType: range
                             refId: A
-                            expr: 'sum(count_over_time({namespace=~"todolist-.*"} | level=~"error|critical" [5m]))'
+                            expr: 'sum(count_over_time({namespace=~"todolist-.*"} | level=~"(?i)(error|critical)" [5m]))'
                         - refId: B
                           datasourceUid: __expr__
                           relativeTimeRange: { from: 300, to: 0 }
