@@ -78,3 +78,12 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
 - 2026-09-11 · Memoria do Grafana 256Mi -> 768Mi. Contexto: OOMKilled (exit 137)
   com ~30 dashboards (uso real ~390Mi); UI alternava 200/503. Escolha: subir o
   limite observando `kubectl top` + restarts em vez de chutar "pequeno".
+- 2026-09-11 · RBAC: `list` de cronjobs sem resourceNames. Contexto: /cleanup/status
+  mostrava "unknown state" + 403 no log; `auth can-i list cronjobs` = no.
+  Escolha: split em 2 regras — `list` sem resourceNames (RBAC ignora resourceNames
+  p/ list/watch/create; a app descobre o CronJob por list) + `get/patch` travados
+  em `todolist-cleanup`. Validacao anti-falso-verde: pagina retorna 200 mesmo com
+  erro, entao conferir banner ausente + spec.suspend alternando + logs sem 403.
+  Residual conhecido: `patch` com resourceNames impede pivor p/ outros CronJobs,
+  mas nao restringe por campo (jobTemplate do proprio). Aceito: namespace e so
+  da app; alternativa futura = SA separada p/ escrita.
