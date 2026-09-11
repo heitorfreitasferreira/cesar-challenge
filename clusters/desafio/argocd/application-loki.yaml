@@ -39,8 +39,8 @@ spec:
             enabled: true
             size: 1Gi
           resources:
+            # SEM limits de proposito: observando uso real (ver DECISIONS).
             requests: { cpu: 50m, memory: 256Mi }
-            limits: { cpu: 500m, memory: 768Mi }
         # Modo single binary: caches e microservicos nao sao usados.
         chunksCache:
           enabled: false

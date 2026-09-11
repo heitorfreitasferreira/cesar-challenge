@@ -62,8 +62,8 @@ spec:
                 }
               }
         resources:
+          # SEM limits de proposito: observando uso real (ver DECISIONS).
           requests: { cpu: 20m, memory: 64Mi }
-          limits: { cpu: 200m, memory: 256Mi }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability

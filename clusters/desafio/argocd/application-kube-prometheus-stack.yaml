@@ -24,8 +24,9 @@ spec:
             serviceMonitorNamespaceSelector: {}
             podMonitorSelectorNilUsesHelmValues: false
             resources:
+              # SEM limits de proposito: observando uso real p/ dimensionar
+              # depois (ver DECISIONS). requests mantidos p/ scheduling sao.
               requests: { cpu: 100m, memory: 512Mi }
-              limits: { cpu: "1", memory: 1Gi }
             storageSpec:
               volumeClaimTemplate:
                 spec:
@@ -49,22 +50,17 @@ spec:
               url: http://loki-gateway.observability.svc.cluster.local
               access: proxy
           resources:
-            # Grafana 13 + ~30 dashboards provisionados: 256Mi de limite
-            # causava OOMKilled (exit 137). Nodes tem folga de sobra.
+            # SEM limits de proposito: observando uso real (ver DECISIONS).
             requests: { cpu: 50m, memory: 256Mi }
-            limits: { cpu: 500m, memory: 768Mi }
         prometheusOperator:
           resources:
             requests: { cpu: 50m, memory: 128Mi }
-            limits: { cpu: 200m, memory: 512Mi }
         kube-state-metrics:
           resources:
             requests: { cpu: 10m, memory: 32Mi }
-            limits: { cpu: 100m, memory: 128Mi }
         prometheus-node-exporter:
           resources:
             requests: { cpu: 10m, memory: 32Mi }
-            limits: { cpu: 100m, memory: 128Mi }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
