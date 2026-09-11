@@ -43,6 +43,16 @@ spec:
       kind: Deployment
     - group: batch
       kind: CronJob
+    # Pod/ReplicaSet/Job NAO sao gerenciados (nao existem no Git), mas precisam
+    # estar na allowlist: o Argo esconde da arvore recursos fora dela, e como
+    # Pods herdam visibilidade do ReplicaSet (e Jobs do CronJob), sem essas
+    # 3 linhas a UI mostra so os pais (sem aba LOGS por pod).
+    - group: ""
+      kind: Pod
+    - group: apps
+      kind: ReplicaSet
+    - group: batch
+      kind: Job
     - group: networking.k8s.io
       kind: Ingress
     - group: policy
