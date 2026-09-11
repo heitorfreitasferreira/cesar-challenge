@@ -49,8 +49,10 @@ spec:
               url: http://loki-gateway.observability.svc.cluster.local
               access: proxy
           resources:
-            requests: { cpu: 50m, memory: 128Mi }
-            limits: { cpu: 200m, memory: 256Mi }
+            # Grafana 13 + ~30 dashboards provisionados: 256Mi de limite
+            # causava OOMKilled (exit 137). Nodes tem folga de sobra.
+            requests: { cpu: 50m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 768Mi }
         prometheusOperator:
           resources:
             requests: { cpu: 50m, memory: 128Mi }
