@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: todolist-config
-data:
-  # Nao e segredo: cor/tema vao em ConfigMap, nunca em Secret.
-  # Cada overlay fixa seu valor via patch (trocar cor = 1 linha + push).
-  APP_COLOR: "gray"
-  APP_NAME: "TodoList"

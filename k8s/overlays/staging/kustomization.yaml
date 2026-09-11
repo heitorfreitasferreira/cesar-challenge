@@ -8,14 +8,17 @@ resources:
   - sealed-postgres.yaml
   - sealed-auth.yaml
 patches:
-  - path: configmap-patch.yaml
-    target:
-      kind: ConfigMap
-      name: todolist-config
   - path: ingress-patch.yaml
     target:
       kind: Ingress
       name: todolist
+# configMapGenerator: o hash do conteudo entra no nome, o kustomize reescreve
+# o envFrom.configMapRef do Deployment -> mudar a cor dispara rollout.
+configMapGenerator:
+  - name: todolist-config
+    literals:
+      - APP_COLOR=green
+      - "APP_NAME=TodoList [staging]"
 images:
   - name: ghcr.io/heitorfreitasferreira/todolist-app
     newTag: 58999487d1cfc5ef044f0efb750723b64cee2070

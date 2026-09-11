@@ -147,3 +147,9 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
   output do bootstrap. Escolha: `bootstrap.sh` grava `envs/argocd.env` (gitignored,
   como o do Grafana). Evolucao futura (Opcao B): senha deterministica num
   SealedSecret (`argocd-secret` com `admin.password` bcrypt) para ser gerida em Git.
+- 2026-09-11 · APP_COLOR via `configMapGenerator` (hash no nome). Contexto: trocar a
+  cor mudava o ConfigMap, mas sem rollout o env do container nao atualiza (envFrom
+  so injeta na criacao do pod) — a cor so mudava com restart manual. Escolha:
+  `configMapGenerator` por overlay; o hash do conteudo entra no nome e o kustomize
+  reescreve o `envFrom.configMapRef`, entao a mudanca dispara rollout sozinha.
+  Descarte: Reloader/stakater (mais um componente) e restart manual (nao-GitOps).

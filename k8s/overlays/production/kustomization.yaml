@@ -8,14 +8,16 @@ resources:
   - sealed-postgres.yaml
   - sealed-auth.yaml
 patches:
-  - path: configmap-patch.yaml
-    target:
-      kind: ConfigMap
-      name: todolist-config
   - path: ingress-patch.yaml
     target:
       kind: Ingress
       name: todolist
+# configMapGenerator: hash no nome -> mudar a cor dispara rollout.
+configMapGenerator:
+  - name: todolist-config
+    literals:
+      - APP_COLOR=blue
+      - APP_NAME=TodoList
 images:
   - name: ghcr.io/heitorfreitasferreira/todolist-app
     newTag: ade914a9d074ac9663eeaa8285f5b9c602b99bfb
