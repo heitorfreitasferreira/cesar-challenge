@@ -18,6 +18,19 @@ spec:
         app: todolist
     spec:
       serviceAccountName: todolist
+      # O gunicorn sobe o app e roda create_all() no import: sem o Postgres de
+      # pe, os workers falham e o master sai (CrashLoop no primeiro deploy).
+      # O initContainer espera o banco aceitar conexoes antes de iniciar a app.
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+          command:
+            - sh
+            - -c
+            - until pg_isready -h postgres -p 5432 -U todolist; do echo "aguardando postgres..."; sleep 2; done
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { cpu: 50m, memory: 32Mi }
       containers:
         - name: todolist
           # Imagem fixada por digest imutavel no overlay (nunca :latest).
