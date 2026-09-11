@@ -153,3 +153,8 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
   `configMapGenerator` por overlay; o hash do conteudo entra no nome e o kustomize
   reescreve o `envFrom.configMapRef`, entao a mudanca dispara rollout sozinha.
   Descarte: Reloader/stakater (mais um componente) e restart manual (nao-GitOps).
+- 2026-09-11 · Repo da app so com `staging` (default) + `production` (protegida).
+  Contexto: a `main` do fork era vestigial no GitLab Flow (o CI usa staging/
+  production e o bump aponta para a main do cesar-challenge, nao do app).
+  Escolha: remover a `main` (ancestral de staging, sem perda de historico).
+  Descarte: manter as 3 branches (ambiguidade sobre a principal).
