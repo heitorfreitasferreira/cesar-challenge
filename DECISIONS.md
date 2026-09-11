@@ -109,3 +109,19 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
 - 2026-09-11 · Alloy descarta kube-system/kube-public/kube-node-lease/argocd.
   Contexto: volume e ruido sem valor para o desafio; mantem observability para
   depurar a propria stack. Retencao Loki: 72h.
+- 2026-09-11 · Liveness `/livez` separada de readiness `/healthz`. Contexto: as
+  duas usavam `/healthz` (que consulta o banco); queda do Postgres reiniciava o
+  pod em loop sem resolver nada. Escolha: `/livez` nao toca no banco e alimenta
+  a liveness; `/healthz` continua na readiness (tira do balanceamento).
+- 2026-09-11 · Testes + gate de CI. Escolha: pytest (probes, auth, CRUD, dedupe,
+  `/metrics`, token do cleanup) rodando contra Postgres como service container;
+  job `test` virou check obrigatorio em `production`. Descarte: testar so em
+  runtime (sem gate) — nao protege a promocao.
+- 2026-09-11 · CI do repo GitOps (`validate`): `kustomize build` + `kubeconform`
+  + grep de segredos + gitleaks. Contexto: o Argo aplica o que esta no Git;
+  validar antes evita `OutOfSync`/erro de schema na reconciliacao.
+- 2026-09-11 · `bootstrap.sh` com restore ou reseal. Contexto: sealed secrets
+  sao cluster-bound; em cluster novo os selos do Git ficam indecifraveis.
+  Escolha: restaura a chave do backup local (mantem os selos) ou, sem backup,
+  cria os `.env` sinteticos e re-sela, commitando. Descartado: versionar a chave
+  privada (vazamento) e depender de passo manual.

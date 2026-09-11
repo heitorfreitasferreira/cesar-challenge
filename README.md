@@ -5,6 +5,33 @@ Padrao GitOps: manifests finais aqui, CI no repo da app,
 Argo CD reconcilia Git -> cluster. Digest imutavel versionado aqui; o repo
 da app nao e segunda fonte de verdade.
 
+## Como o desafio e atendido (R1–R5)
+
+| Req | Como |
+|---|---|
+| **R1** Provisionamento automatizado | Cluster k3d por codigo (`clusters/desafio/k3d-config.yaml`); Argo CD, controller de secrets e apps aplicados por `bootstrap.sh` (1 comando, repetivel, sem console). Infra de observabilidade via Helm charts pinados. |
+| **R2** Deploy automatizado | `git push` no repo da app -> CI (test + build GHCR) -> bump de digest no overlay -> Argo CD sincroniza. Nada manual. |
+| **R3** Acesso externo | Ingress (Traefik) no LB `127.0.0.1:8081`, por host: staging/production/argocd/grafana. |
+| **R4** Escalabilidade e resiliencia | 2 replicas + HPA (2..5) + PDB + probes separadas (liveness `/livez`, readiness `/healthz`) + rolling update `maxUnavailable: 0` + requests/limits. |
+| **R5** Documentacao | Este README, `DECISIONS.md` (escolhas/descartes/desafios), `evidencias/` (logs/estado) e screenshots. |
+
+## Arquitetura
+
+```
+                 git push (staging|production)
+  todolist-app ──────────────────────────────► GitHub Actions (test -> build GHCR)
+   (codigo+CI)                                          │ bump de digest (kustomize)
+                                                        ▼
+  cesar-challenge (GitOps)  ◄───────────────────────────┘
+   k8s/base + overlays/ + clusters/
+        │  Argo CD reconcilia
+        ▼
+   k3d cluster "desafio" ── Traefik (127.0.0.1:8081)
+        ├── todolist-staging      (auto-sync)
+        ├── todolist-production   (sync manual = promocao)
+        └── observability         (Prometheus/Grafana/Loki/Alloy)
+```
+
 ## Ambientes e interfaces
 
 | Env | Namespace | Cor | URL | Sync Argo |
@@ -65,39 +92,66 @@ Promocao: PR `staging -> production` -> merge -> CI bumpar o overlay production
 
 ## Reproducao (do zero)
 
+Forma curta (recomendada) — um comando, repete do zero:
+
 ```bash
 export KUBECONFIG=~/.kube/desafio-k3d.kubeconfig
-k3d cluster create --config clusters/desafio/k3d-config.yaml
+./bootstrap.sh                 # cluster -> Argo -> secrets -> apps -> espera Synced/Healthy
+# ./bootstrap.sh --reseal       # forca re-selar os secrets com o cert atual
+# ./bootstrap.sh teardown       # derruba o cluster
+```
 
-# Argo CD
+O script resolve os secrets automaticamente: se existir `sealed-backup/key.yaml`
+(backup local da chave do controller, **nunca versionado**) ele restaura a chave e
+mantem os selos do Git; caso contrario, cria os `envs/*.env` sinteticos que faltarem
+e **re-sela**, commitando o resultado (o Argo le do Git).
+
+<details><summary>Passo a passo manual (equivalente)</summary>
+
+```bash
+k3d cluster create --config clusters/desafio/k3d-config.yaml
 kubectl apply -f clusters/desafio/argocd/namespace.yaml
 kubectl apply -n argocd -f clusters/desafio/argocd/install.yaml
 kubectl -n argocd rollout status deployment/argocd-server
-# UI do Argo via Ingress (bonus):
 kubectl -n argocd patch deployment argocd-server --type=json \
   --patch-file clusters/desafio/argocd/argocd-server-insecure.patch.json
 kubectl apply -f clusters/desafio/argocd/argocd-ui-ingress.yaml
-
-# Projetos + controller de secrets (infra primeiro)
 kubectl apply -f clusters/desafio/argocd/project.yaml
 kubectl apply -f clusters/desafio/argocd/project-observability.yaml
 kubectl apply -f clusters/desafio/argocd/application-sealed.yaml
 kubectl -n kube-system rollout status deployment/sealed-secrets-controller
-
-# App (staging auto; production manual) e observabilidade
-kubectl apply -f clusters/desafio/argocd/application-staging.yaml
-kubectl apply -f clusters/desafio/argocd/application-production.yaml
-kubectl apply -f clusters/desafio/argocd/application-kube-prometheus-stack.yaml
-kubectl apply -f clusters/desafio/argocd/application-loki.yaml
-kubectl apply -f clusters/desafio/argocd/application-alloy.yaml
-kubectl apply -f clusters/desafio/argocd/application-observability.yaml
-
+# ... secrets (ver bootstrap.sh) ...
+for app in staging production kube-prometheus-stack loki alloy observability; do
+  kubectl apply -f clusters/desafio/argocd/application-$app.yaml
+done
 kubectl -n argocd get applications
-# staging sincroniza sozinho; production = clicar Sync no Argo.
 ```
+</details>
 
 Novo deploy: `git push` em `staging`/`production` no fork `todolist-app`
-dispara a CI (build -> GHCR -> bump de digest no overlay certo -> Argo sync).
+dispara a CI (test -> build -> GHCR -> bump de digest no overlay certo -> Argo sync).
+
+## Desafios encontrados no caminho
+
+Registrados em detalhe no `DECISIONS.md`; os principais:
+
+- `kustomize edit set image` reescrevia o overlay inteiro (comentarios perdidos,
+  `newName` espurio) -> bump cirurgico por regex ancorado em `newTag`/`digest`.
+- RBAC: `resourceNames` nao vale para `list` -> `/cleanup/status` tomava 403.
+  Split: `list` sem restricao + `get/patch` travados por nome.
+- Argo esconde da arvore recursos fora da allowlist do AppProject
+  (`Pod/ReplicaSet/Job` entraram como view-only).
+- Regra de alerta `threshold` auto-referente ("cannot reference itself") ->
+  `reduce(last)` + `math $B > 0`.
+- Grafana `OOMKilled` por limite chutado -> dimensionado apos medir uso real.
+
+## Limitacoes conhecidas (o que eu faria em producao)
+
+- Postgres de 1 replica (sem HA) e sem backup automatico; sem TLS no Ingress.
+- Retencao de logs 72h e alerta sem notificacao (cluster local descartavel).
+- Segredos selados sao *cluster-bound*: a chave precisa de backup externo.
+- Em producao: Postgres gerenciado/HA + PITR, External Secrets, TLS, multi-cluster
+  com ApplicationSet, NetworkPolicies e alertas com roteamento real.
 
 Detalhes de operacao, secrets e observabilidade: `DECISIONS.md`
 (+ `/k-secrets` no opencode).
