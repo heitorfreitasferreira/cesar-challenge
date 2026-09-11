@@ -73,6 +73,23 @@ install_argocd() {
   kubectl apply -f "${ROOT}/clusters/desafio/argocd/argocd-ui-ingress.yaml"
 }
 
+persist_argocd_credentials() {
+  # A senha do admin do Argo CD e gerada no install e muda a cada cluster.
+  # Gravamos no envs/ local (gitignored) para ela fazer parte do "pacote",
+  # como fazemos com a do Grafana. Opcao B (senha deterministica via
+  # SealedSecret) fica documentada no DECISIONS como evolucao.
+  local pw
+  pw="$(kubectl -n "${ARGOCD_NS}" get secret argocd-initial-admin-secret \
+    -o jsonpath='{.data.password}' 2>/dev/null | base64 -d || true)"
+  if [[ -n "$pw" ]]; then
+    printf 'admin-user=admin\nadmin-password=%s\n' "$pw" > "${ROOT}/envs/argocd.env"
+    chmod 600 "${ROOT}/envs/argocd.env"
+    log "credencial do Argo CD gravada em envs/argocd.env (local, gitignored)"
+  else
+    warn "nao achei argocd-initial-admin-secret (senha pode ja ter sido trocada)"
+  fi
+}
+
 ensure_env_files() {
   local file="$1"; shift
   # (re)cria o .env se ausente, vazio ou com algum valor em branco.
@@ -203,8 +220,11 @@ wait_ready() {
 
 show_access() {
   local argopw grafanapw
-  argopw="$(kubectl -n "${ARGOCD_NS}" get secret argocd-initial-admin-secret \
-    -o jsonpath='{.data.password}' 2>/dev/null | base64 -d || echo '?')"
+  argopw="$(grep -h admin-password "${ROOT}/envs/argocd.env" 2>/dev/null | cut -d= -f2)"
+  if [[ -z "$argopw" ]]; then
+    argopw="$(kubectl -n "${ARGOCD_NS}" get secret argocd-initial-admin-secret \
+      -o jsonpath='{.data.password}' 2>/dev/null | base64 -d || echo '?')"
+  fi
   grafanapw="$(grep -h admin-password "${ROOT}/envs/grafana-observability.env" 2>/dev/null | cut -d= -f2 || echo '?')"
   cat <<EOF
 
@@ -237,6 +257,7 @@ main() {
   preflight
   create_cluster
   install_argocd
+  persist_argocd_credentials
   # Projetos ANTES das Applications (o Application valida o AppProject ja na spec).
   kubectl apply -f "${ROOT}/clusters/desafio/argocd/project.yaml"
   kubectl apply -f "${ROOT}/clusters/desafio/argocd/project-observability.yaml"

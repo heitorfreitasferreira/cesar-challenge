@@ -142,3 +142,8 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
   `secretName` -> cert self-signed padrao do Traefik). HTTP segue funcionando para
   a demo. Descarte: cert-manager + CA confiavel agora (custo/risco para um cluster
   local); em producao o caminho e cert-manager + ACME/CA interna.
+- 2026-09-11 · Credencial do admin do Argo CD no `envs/argocd.env` (local).
+  Contexto: a senha e gerada no install e muda a cada cluster; so aparecia no
+  output do bootstrap. Escolha: `bootstrap.sh` grava `envs/argocd.env` (gitignored,
+  como o do Grafana). Evolucao futura (Opcao B): senha deterministica num
+  SealedSecret (`argocd-secret` com `admin.password` bcrypt) para ser gerida em Git.
