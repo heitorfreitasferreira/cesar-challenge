@@ -16,3 +16,7 @@ configMapGenerator:
   - name: dashboard-postgres
     files:
       - dashboards/postgres.json
+  - name: dashboard-logs
+    files:
+      - dashboards/logs-staging.json
+      - dashboards/logs-production.json

@@ -46,9 +46,57 @@ spec:
               - grafana.127.0.0.1.nip.io
           additionalDataSources:
             - name: Loki
+              # uid fixo: as regras de alerta referenciam "loki".
+              uid: loki
               type: loki
               url: http://loki-gateway.observability.svc.cluster.local
               access: proxy
+          # Alerta simples (Grafana-managed) sobre logs de erro. Sem contato de
+          # notificacao: o ambiente e local e descartavel (ver DECISIONS).
+          alerting:
+            rules.yaml:
+              apiVersion: 1
+              groups:
+                - orgId: 1
+                  name: todolist-logs
+                  folder: TodoList
+                  interval: 1m
+                  rules:
+                    - uid: todolist-erros-logs
+                      title: TodoList - logs de erro em staging/production
+                      condition: B
+                      for: 5m
+                      noDataState: OK
+                      execErrState: OK
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: Logs de nivel error/critical acima do limiar em 5 minutos
+                      data:
+                        - refId: A
+                          datasourceUid: loki
+                          relativeTimeRange: { from: 300, to: 0 }
+                          model:
+                            editorMode: code
+                            queryType: range
+                            refId: A
+                            expr: 'sum(count_over_time({namespace=~"todolist-.*"} | level=~"error|critical" [5m]))'
+                        - refId: B
+                          datasourceUid: __expr__
+                          relativeTimeRange: { from: 300, to: 0 }
+                          model:
+                            refId: B
+                            type: threshold
+                            expression: B
+                            intervalMs: 1000
+                            maxDataPoints: 43200
+                            datasource: { type: __expr__, uid: __expr__ }
+                            conditions:
+                              - evaluator: { params: [0], type: gt }
+                                operator: { type: and }
+                                query: { params: [A] }
+                                reducer: { type: last }
+                                type: query
           resources:
             # SEM limits de proposito: observando uso real (ver DECISIONS).
             requests: { cpu: 50m, memory: 256Mi }
