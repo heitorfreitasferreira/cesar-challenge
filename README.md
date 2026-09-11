@@ -26,7 +26,12 @@ Stack entregue via Argo CD (Helm charts pinados), tudo em `observability`:
   (Prometheus + Grafana + node-exporter + kube-state-metrics, dashboards
   prontos de Kubernetes/Compute Resources). Alertmanager desligado (ver DECISIONS).
 - **Logs**: Loki 7.3.0 (single-binary, PVC 1Gi, retencao 72h) + Grafana Alloy
-  1.12.1 (DaemonSet coletando stdout de todos os pods).
+  1.12.1 (DaemonSet coletando stdout de todos os pods). A app loga **JSON**
+  (app + access log do gunicorn); o Alloy extrai `level`/`logger` como labels
+  e `status/method/path/duration_us` como structured metadata.
+  Dashboards `Logs — staging` e `Logs — production` (volume por nivel/logger,
+  access log, erros, exploracao com variaveis). Alerta (Grafana-managed) para
+  logs de erro acima de 0 em 5 min, com `for: 5m`.
 - **Metricas da aplicacao**: `/metrics` na app (prometheus-flask-exporter,
   aditivo, multiprocess-safe p/ gunicorn) + ServiceMonitor por env.
 - **Metricas do banco**: postgres-exporter como sidecar do Postgres +

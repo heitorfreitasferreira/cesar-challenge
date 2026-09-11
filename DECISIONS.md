@@ -92,3 +92,20 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
   Escolha: adicionar as 3 kinds a `project.yaml` — view-only (nao existem no
   Git, o Argo nao passa a gerenciar nada). O Argo esconde da arvore recursos
   fora da allowlist, e Pods herdam visibilidade do ReplicaSet (Jobs, do CronJob).
+- 2026-09-11 · Logs em JSON na app (sem lib extra). Contexto: logs em texto nao
+  davam filtro por nivel/status no Loki; e nao havia access log nenhum (gunicorn
+  sem `--access-logfile`). Escolha: `logging_json.py` (formatter proprio, campos
+  time/level/logger/message/exception) no logger raiz + `gunicorn.conf.py` com
+  access/error em JSON. Descarte: python-json-logger (dependencia dispensavel).
+- 2026-09-11 · Parsing no Alloy (loki.process). `stage.json` -> labels `level` e
+  `logger` (cardinalidade baixa, filtro/agregacao) + structured metadata de
+  `status/method/path/duration_us` (evita explodir series). `drop_malformed:false`
+  (default): linhas de texto de outros containers passam intactas.
+- 2026-09-11 · Alerta Grafana-managed (reduce+math) sobre logs de erro, sem
+  contato de notificacao. Contexto: ambiente local descartavel (sem SMTP/Slack);
+  um threshold sem destinatario ainda demonstra a avaliacao na UI. Primeiro
+  modelo usava `threshold` com `expression` apontando para si ("cannot reference
+  itself"); corrigido para reduce(last) + math `$B > 0`.
+- 2026-09-11 · Alloy descarta kube-system/kube-public/kube-node-lease/argocd.
+  Contexto: volume e ruido sem valor para o desafio; mantem observability para
+  depurar a propria stack. Retencao Loki: 72h.

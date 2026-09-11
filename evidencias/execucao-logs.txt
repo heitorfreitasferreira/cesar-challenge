@@ -1,0 +1,32 @@
+=== argocd apps (2026-09-11 15:56:09 UTC) ===
+NAME                    SYNC STATUS   HEALTH STATUS
+alloy                   Synced        Healthy
+kube-prometheus-stack   Synced        Healthy
+loki                    Synced        Healthy
+observability           Synced        Healthy
+sealed-secrets          Synced        Healthy
+todolist-production     Synced        Healthy
+todolist-staging        Synced        Healthy
+
+=== amostra access log (staging) ===
+  {"time":"[11/Sep/2026:15:56:02 +0000]","level":"info","logger":"gunicorn.access","remote":"10.42.0.1","method":"GET","path":"/healthz","query":"","status":"200","bytes":"
+  {"time":"[11/Sep/2026:15:56:04 +0000]","level":"info","logger":"gunicorn.access","remote":"10.42.1.1","method":"GET","path":"/healthz","query":"","status":"200","bytes":"
+  {"time":"[11/Sep/2026:15:55:55 +0000]","level":"info","logger":"gunicorn.access","remote":"10.42.0.28","method":"GET","path":"/metrics","query":"","status":"200","bytes":
+
+=== volume por logger (staging, 1h) ===
+   None -> 20
+   app -> 6
+   gunicorn.access -> 238
+   gunicorn.error -> 10
+
+=== dashboards de logs ===
+  - Logs — production
+  - Logs — staging
+
+=== datasources ===
+  - Alertmanager (alertmanager)
+  - Loki (loki)
+  - Prometheus (prometheus)
+
+=== alerta ===
+  - TodoList - logs de erro em staging/production | state: pending | health: ok
