@@ -97,6 +97,69 @@ Hotfix: branch `hotfix/*` da `production` -> PR em `production` (+ back-merge em
 Promocao: PR `staging -> production` -> merge -> CI bumpar o overlay production
 -> clicar Sync no Argo (production e manual de proposito).
 
+## Pré-requisitos (Linux x86_64 recém-instalado)
+
+Tudo que `bootstrap.sh` e o fluxo precisam, do zero até o cluster no ar. O agente
+**nunca roda `sudo` sozinho** — os passos com `sudo` você executa no terminal.
+
+### 1. Utilitários base
+
+```bash
+sudo apt update && sudo apt install -y \
+  curl git openssh-client python3 openssl iproute2 ca-certificates
+```
+
+(`curl`, `git`, `openssl` e `ss` são usados pelo script; `python3` valida YAML.)
+
+### 2. Docker
+
+Pela doc oficial (https://docs.docker.com/engine/install/), depois libere o acesso:
+
+```bash
+sudo usermod -aG docker "$USER"
+# relogue (ou reboot) e confira:
+docker info
+```
+
+Gate: `docker info` verde antes de continuar.
+
+### 3. CLIs (versões testadas aqui)
+
+| Ferramenta | Versão | Instalação |
+|---|---|---|
+| `k3d` | v5.9.0 (cria k3s v1.35) | `curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh \| bash` |
+| `kubectl` | v1.37 (skew ±1 do k3s vale) | https://kubernetes.io/docs/tasks/tools/ |
+| `kubeseal` | 0.39.1 (casa com o controller vendorizado) | tarball do release no `~/.local/bin` |
+| `kustomize` | v5.7.1 | tarball do release no `~/.local/bin` |
+| `gh` | opcional (monitorar CI/forks) | https://cli.github.com/manual/installation |
+
+Obrigatórios para o `bootstrap.sh`: `k3d`, `kubectl` e `kubeseal`.
+(`kustomize` é usado pelo CI e pela validação local.)
+
+### 4. GitHub: fork, token e acesso
+
+1. **Fork** `andreffcastro/todolist-app` para a sua conta. Se o seu usuário for
+   diferente de `heitorfreitasferreira`, ajuste `IMAGE` em
+   `todolist-app/.github/workflows/ci.yaml` e o nome da imagem nos overlays
+   (`k8s/overlays/*/kustomization.yaml`).
+2. **Secret `GITOPS_BUMP_TOKEN`** no repo do app: um *fine-grained PAT* com
+   **Contents: read+write** no repo `cesar-challenge`. É com ele que o job de
+   bump commita o digest da imagem aqui. Se expirar, a CI falha fechado.
+3. **SSH no GitHub** (`ssh -T git@github.com` ok) — o caminho `--reseal` do
+   `bootstrap.sh` dá `push` neste repo.
+4. **GHCR público**: as imagens precisam ser públicas, pois o kubelet puxa
+   **sem credencial** (não há `imagePullSecret` em nenhum manifest). Após o
+   primeiro build, verifique a visibilidade do pacote em
+   `ghcr.io/<user>/todolist-app`.
+
+### 5. Máquina e rede
+
+- Recursos: o stack sobe ~25 pods — reserve **4 vCPU / 6–8 GiB** livres para o Docker.
+- Portas livres em loopback: **6444** (API), **80 e 443** (LB):
+  `ss -tlnp | grep -E ':(80|443|6444)\b'` deve sair vazio.
+- `KUBECONFIG` isolado: `export KUBECONFIG=~/.kube/desafio-k3d.kubeconfig`
+  (nunca toque em `~/.kube/config`).
+
 ## Reproducao (do zero)
 
 Forma curta (recomendada) — um comando, repete do zero:
