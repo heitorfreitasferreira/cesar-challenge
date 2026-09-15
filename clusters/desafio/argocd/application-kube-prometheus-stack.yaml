@@ -36,6 +36,13 @@ spec:
                     requests:
                       storage: 2Gi
         grafana:
+          # Pin 12.4.9: o chart 90.0.0 traz Grafana 13.2 por padrao, onde
+          # prometheus/loki viraram plugins externos (preinstall via
+          # grafana.com). Sem o download, o Grafana sobe sem esses
+          # datasources ("plugin not registered") e TODOS os dashboards ficam
+          # vazios mesmo com o Prometheus coletando. 12.x tem ambos embutidos.
+          image:
+            tag: "12.4.9"
           admin:
             existingSecret: grafana-admin
             userKey: admin-user

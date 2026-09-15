@@ -153,6 +153,17 @@ Formato: data + contexto + escolha + descarte. Sem cerimonia de ADR (1 decisao =
   `configMapGenerator` por overlay; o hash do conteudo entra no nome e o kustomize
   reescreve o `envFrom.configMapRef`, entao a mudanca dispara rollout sozinha.
   Descarte: Reloader/stakater (mais um componente) e restart manual (nao-GitOps).
+- 2026-09-15 · Grafana pinado em 12.4.9. Contexto: todos os dashboards vazios
+  ("No data") com o Prometheus coletando normalmente (targets `todolist` e
+  `postgres` up, series `flask_http_*`/`pg_*` presentes). Causa raiz: o chart
+  90.0.0 usa Grafana 13.2, onde prometheus/loki sao plugins externos
+  instalados via grafana.com no restart (`preinstall_sync`); sem o download,
+  `/api/plugins` nao lista nenhum dos dois e toda query falha com
+  `plugin.notRegistered` (visivel tambem no log do alerte `todolist-erros-logs`).
+  Escolha: `grafana.image.tag: "12.4.9"` (ambos embutidos, sem download).
+  Descarte: `preinstall_sync` no 13.2 (depende de egress para grafana.com a
+  cada restart) e dashboards por UID (nao era a causa: o datasource existia,
+  o plugin e que nao).
 - 2026-09-11 · Repo da app so com `staging` (default) + `production` (protegida).
   Contexto: a `main` do fork era vestigial no GitLab Flow (o CI usa staging/
   production e o bump aponta para a main do cesar-challenge, nao do app).
